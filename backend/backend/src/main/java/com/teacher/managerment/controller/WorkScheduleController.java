@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/work-schedules")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
 public class WorkScheduleController {
 
     private final WorkScheduleService workScheduleService;
