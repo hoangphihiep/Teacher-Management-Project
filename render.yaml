@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: teacher-management-backend
+    env: java
+    buildCommand: ./mvnw clean package
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: JAVA_VERSION
+        value: 17
+    rootDir: backend/backend
