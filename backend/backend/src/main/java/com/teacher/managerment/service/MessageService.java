@@ -11,6 +11,7 @@ import com.teacher.managerment.repository.MessageRepository;
 import com.teacher.managerment.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -132,6 +133,38 @@ public class MessageService {
             Optional<MessageRecipient> recipient = messageRecipientRepository.findByMessageIdAndRecipientId(message.getId(), recipientId);
             return convertToDto(message, recipient.orElse(null));
         }).collect(Collectors.toList());
+    }
+
+    public List<MessageDto> getAnnouncementsForUser(Long recipientId, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+
+        // Get personal announcements
+        List<Message> personalAnnouncements = messageRepository.findAnnouncementsForUser(recipientId, pageable);
+
+        // Get broadcast announcements
+        List<Message> broadcastAnnouncements = messageRepository.findBroadcastAnnouncements(pageable);
+
+        // Combine and sort by creation date
+        List<Message> allAnnouncements = new ArrayList<>();
+        allAnnouncements.addAll(personalAnnouncements);
+        allAnnouncements.addAll(broadcastAnnouncements);
+
+        return allAnnouncements.stream()
+                .distinct()
+                .sorted((m1, m2) -> m2.getCreatedAt().compareTo(m1.getCreatedAt()))
+                .limit(limit)
+                .map(message -> {
+                    Optional<MessageRecipient> recipient = messageRecipientRepository.findByMessageIdAndRecipientId(message.getId(), recipientId);
+                    return convertToDto(message, recipient.orElse(null));
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Long countUnreadAnnouncements(Long recipientId) {
+        Long personalCount = messageRepository.countUnreadAnnouncements(recipientId);
+        // For broadcast announcements, we need to check if user has read them
+        // This is a simplified approach - in production you might want to track broadcast message reads differently
+        return personalCount;
     }
 
     public MessageDto markMessageAsRead(Long messageId, Long recipientId) {

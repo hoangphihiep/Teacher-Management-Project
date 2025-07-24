@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { Calendar, Users, Clock, TrendingUp, AlertCircle, CheckCircle, Plus, ArrowRight, HandHeart } from "lucide-react"
+import { Calendar, BookOpen, Users, Clock, TrendingUp, AlertCircle, CheckCircle, Plus, ArrowRight } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiService, type DashboardStats } from "@/lib/api"
 
-export default function AssistantDashboardPage() {
+export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
@@ -59,7 +59,7 @@ export default function AssistantDashboardPage() {
         )
       case "upcoming":
         return (
-          <Badge className="bg-emerald-100 text-emerald-700">
+          <Badge className="bg-royal-100 text-royal-700">
             <Clock className="h-3 w-3 mr-1" />
             Sắp tới
           </Badge>
@@ -74,7 +74,7 @@ export default function AssistantDashboardPage() {
       case "meeting":
         return <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5" />
       case "announcement":
-        return <HandHeart className="h-4 w-4 text-blue-600 mt-0.5" />
+        return <BookOpen className="h-4 w-4 text-blue-600 mt-0.5" />
       default:
         return <AlertCircle className="h-4 w-4 text-gray-600 mt-0.5" />
     }
@@ -136,59 +136,50 @@ export default function AssistantDashboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard Trợ giảng</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-600 mt-1">Chào mừng trở lại, Trợ giảng</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2 bg-transparent">
-            <Plus className="h-4 w-4" />
-            Báo cáo hỗ trợ
-          </Button>
-          <Button className="bg-emerald-500 hover:bg-emerald-600 gap-2">
-            <Calendar className="h-4 w-4" />
-            Xem lịch tuần
-          </Button>
-        </div>
+        
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nhiệm vụ hôm nay</CardTitle>
-            <Calendar className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium">Lớp học hôm nay</CardTitle>
+            <Calendar className="h-4 w-4 text-royal-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{dashboardData.todayClasses}</div>
-            <p className="text-xs text-slate-600">Công việc trong ngày</p>
+            <p className="text-xs text-slate-600">Lịch học trong ngày</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lớp hỗ trợ</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Tổng học sinh</CardTitle>
+            <Users className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{dashboardData.totalStudents}</div>
-            <p className="text-xs text-slate-600">Lớp đang hỗ trợ</p>
+            <p className="text-xs text-slate-600">Trên {dashboardData.totalSubjects} môn học</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nhiệm vụ hoàn thành</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">Môn học</CardTitle>
+            <BookOpen className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{dashboardData.totalSubjects}</div>
-            <p className="text-xs text-slate-600">Tuần này</p>
+            <p className="text-xs text-slate-600">Đang giảng dạy</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Giờ làm việc</CardTitle>
+            <CardTitle className="text-sm font-medium">Giờ giảng dạy</CardTitle>
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -200,14 +191,14 @@ export default function AssistantDashboardPage() {
 
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Schedule & Tasks */}
+        {/* Left Column - Schedule & Classes */}
         <div className="lg:col-span-2 space-y-6">
           {/* Today's Schedule */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-emerald-500" />
-                Lịch làm việc hôm nay
+                <Calendar className="h-5 w-5 text-royal-500" />
+                Lịch học hôm nay
               </CardTitle>
               <CardDescription>
                 {new Date().toLocaleDateString("vi-VN", {
@@ -221,27 +212,26 @@ export default function AssistantDashboardPage() {
             <CardContent>
               <div className="space-y-4">
                 {dashboardData.todaySchedule.length > 0 ? (
-                  dashboardData.todaySchedule.map((task) => (
+                  dashboardData.todaySchedule.map((classItem) => (
                     <div
-                      key={task.id}
+                      key={classItem.id}
                       className="flex items-center justify-between p-4 rounded-lg border bg-white hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col items-center gap-1">
-                          <div className="text-sm font-medium text-slate-900">{formatTime(task.startTime)}</div>
-                          <div className="text-xs text-slate-500">{formatTime(task.endTime)}</div>
+                          <div className="text-sm font-medium text-slate-900">{formatTime(classItem.startTime)}</div>
+                          <div className="text-xs text-slate-500">{formatTime(classItem.endTime)}</div>
                         </div>
                         <div className="h-8 w-px bg-slate-200" />
                         <div>
-                          <div className="font-medium text-slate-900">{task.subject}</div>
+                          <div className="font-medium text-slate-900">{classItem.subject}</div>
                           <div className="text-sm text-slate-600">
-                            {task.className} • {task.room}
+                            {classItem.className} • {classItem.room}
                           </div>
-                          {task.notes && <div className="text-xs text-emerald-600 mt-1">{task.notes}</div>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {getStatusBadge(task.status)}
+                        {getStatusBadge(classItem.status)}
                         <Button variant="ghost" size="sm">
                           <ArrowRight className="h-4 w-4" />
                         </Button>
@@ -249,7 +239,7 @@ export default function AssistantDashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-slate-500">Không có nhiệm vụ nào hôm nay</div>
+                  <div className="text-center py-8 text-slate-500">Không có lịch học nào hôm nay</div>
                 )}
               </div>
             </CardContent>
@@ -258,13 +248,13 @@ export default function AssistantDashboardPage() {
           {/* Weekly Progress */}
           <Card>
             <CardHeader>
-              <CardTitle>Tiến độ công việc tuần này</CardTitle>
+              <CardTitle>Tiến độ tuần này</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Nhiệm vụ đã hoàn thành</span>
+                    <span className="text-sm font-medium">Lớp học đã dạy</span>
                     <span className="text-sm text-slate-600">
                       {dashboardData.weeklyProgress.completedClasses}/{dashboardData.weeklyProgress.totalClasses}
                     </span>
@@ -281,7 +271,7 @@ export default function AssistantDashboardPage() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Buổi hỗ trợ hoàn thành</span>
+                    <span className="text-sm font-medium">Bài kiểm tra đã chấm</span>
                     <span className="text-sm text-slate-600">
                       {dashboardData.weeklyProgress.gradedTests}/{dashboardData.weeklyProgress.totalTests}
                     </span>
@@ -297,7 +287,7 @@ export default function AssistantDashboardPage() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Công việc hành chính</span>
+                    <span className="text-sm font-medium">Điểm danh hoàn thành</span>
                     <span className="text-sm text-slate-600">
                       {dashboardData.weeklyProgress.completedAttendance}/{dashboardData.weeklyProgress.totalAttendance}
                     </span>
@@ -333,7 +323,7 @@ export default function AssistantDashboardPage() {
                 {dashboardData.recentActivities.length > 0 ? (
                   dashboardData.recentActivities.map((activity) => (
                     <div key={activity.id} className="flex gap-3">
-                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500 mt-2" />
+                      <div className="flex-shrink-0 w-2 h-2 rounded-full bg-royal-500 mt-2" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-900">{activity.action}</p>
                         <p className="text-sm text-slate-600">{activity.description}</p>
@@ -388,16 +378,16 @@ export default function AssistantDashboardPage() {
             <CardContent>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
-                  <HandHeart className="h-4 w-4" />
-                  Báo cáo hỗ trợ
+                  <Plus className="h-4 w-4" />
+                  Tạo bài kiểm tra mới
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                   <Users className="h-4 w-4" />
-                  Xem lớp hỗ trợ
+                  Điểm danh nhanh
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
-                  <Clock className="h-4 w-4" />
-                  Cập nhật tiến độ
+                  <BookOpen className="h-4 w-4" />
+                  Đăng tài liệu
                 </Button>
               </div>
             </CardContent>

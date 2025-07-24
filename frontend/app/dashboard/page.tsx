@@ -139,16 +139,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-600 mt-1">Chào mừng trở lại, Giáo viên</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2 bg-transparent">
-            <Plus className="h-4 w-4" />
-            Tạo bài kiểm tra
-          </Button>
-          <Button className="bg-royal-500 hover:bg-royal-600 gap-2">
-            <Calendar className="h-4 w-4" />
-            Xem lịch tuần
-          </Button>
-        </div>
+        
       </div>
 
       {/* Stats Cards */}

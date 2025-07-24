@@ -32,4 +32,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT COUNT(m) FROM Message m JOIN m.recipients mr WHERE mr.recipient.id = :recipientId AND mr.isRead = false")
     Long countUnreadMessages(@Param("recipientId") Long recipientId);
+
+    @Query("SELECT m FROM Message m JOIN m.recipients mr WHERE mr.recipient.id = :recipientId AND m.messageType = 'ANNOUNCEMENT' ORDER BY m.createdAt DESC")
+    List<Message> findAnnouncementsForUser(@Param("recipientId") Long recipientId, Pageable pageable);
+
+    @Query("SELECT m FROM Message m WHERE m.messageType = 'ANNOUNCEMENT' AND m.isBroadcast = true ORDER BY m.createdAt DESC")
+    List<Message> findBroadcastAnnouncements(Pageable pageable);
+
+    @Query("SELECT COUNT(m) FROM Message m JOIN m.recipients mr WHERE mr.recipient.id = :recipientId AND m.messageType = 'ANNOUNCEMENT' AND mr.isRead = false")
+    Long countUnreadAnnouncements(@Param("recipientId") Long recipientId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.messageType = 'ANNOUNCEMENT' AND m.isBroadcast = true")
+    Long countBroadcastAnnouncements();
 }

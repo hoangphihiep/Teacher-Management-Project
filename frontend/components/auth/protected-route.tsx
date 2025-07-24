@@ -8,7 +8,7 @@ import { useEffect } from "react"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: "ADMIN" | "TEACHER" | "ASSISTANT"
+  requiredRole?: "TEACHER" | "ADMIN"| "ASSISTANT"
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {

@@ -1,5 +1,5 @@
-//const API_BASE_URL = "http://localhost:8080/api"
-const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
+const API_BASE_URL = "http://localhost:8080/api"
+// const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
 
 export interface LoginRequest {
   username: string

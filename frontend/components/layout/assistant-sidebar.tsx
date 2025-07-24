@@ -6,7 +6,19 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Calendar, MessageSquare, BarChart3, Settings, LogOut, User } from "lucide-react"
+import {
+  BookOpen,
+  Calendar,
+  FileText,
+  MessageSquare,
+  BarChart3,
+  Settings,
+  LogOut,
+  GraduationCap,
+  ClipboardList,
+  Bell,
+  Clock,
+} from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/auth-context"
@@ -32,11 +44,6 @@ const menuItems = [
     href: "/assistant/messages",
     icon: MessageSquare,
   },
-  {
-    title: "Hồ sơ cá nhân",
-    href: "/assistant/profile",
-    icon: User,
-  },
 ]
 
 export function AssistantSidebar({ className }: AssistantSidebarProps) {
@@ -58,16 +65,18 @@ export function AssistantSidebar({ className }: AssistantSidebarProps) {
         {/* User Profile */}
         <div className="px-3 py-2">
           <Link href="/assistant/profile">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-royal-50 border border-royal-100 hover:bg-royal-100 transition-colors cursor-pointer">
               <Avatar className="h-10 w-10">
                 <AvatarImage src="/placeholder-avatar.jpg" alt="Trợ giảng" />
-                <AvatarFallback className="bg-emerald-500 text-white">
-                  {user ? getInitials(user.fullName) : "TG"}
+                <AvatarFallback className="bg-royal-500 text-white">
+                  {typeof window !== "undefined" && user?.fullName ? getInitials(user.fullName) : "TG"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 truncate">{user?.fullName || "Trợ giảng"}</p>
-                <p className="text-xs text-slate-600 truncate">Trợ giảng</p>
+                <p className="text-xs text-slate-600 truncate">
+                  {"Trợ giảng"}
+                </p>
               </div>
             </div>
           </Link>
@@ -77,16 +86,16 @@ export function AssistantSidebar({ className }: AssistantSidebarProps) {
 
         {/* Navigation Menu */}
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-slate-900">Trợ giảng</h2>
-          <ScrollArea className="h-[400px]">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-slate-900">Quản lý</h2>
+          <ScrollArea className="max-h-[400px]">
             <div className="space-y-1">
               {menuItems.map((item) => (
                 <Button
                   key={item.href}
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start gap-3 h-11 px-4 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700",
-                    pathname === item.href && "bg-emerald-100 text-emerald-700 font-medium",
+                    "w-full justify-start gap-3 h-11 px-4 text-slate-700 hover:bg-royal-50 hover:text-royal-700",
+                    pathname === item.href && "bg-royal-100 text-royal-700 font-medium",
                   )}
                   asChild
                 >
@@ -109,7 +118,7 @@ export function AssistantSidebar({ className }: AssistantSidebarProps) {
             className="w-full justify-start gap-3 h-11 px-4 text-slate-700 hover:bg-slate-100"
             asChild
           >
-            <Link href="/assistant/settings">
+            <Link href="/settings">
               <Settings className="h-4 w-4" />
               Cài đặt
             </Link>
@@ -126,4 +135,5 @@ export function AssistantSidebar({ className }: AssistantSidebarProps) {
       </div>
     </div>
   )
+  
 }

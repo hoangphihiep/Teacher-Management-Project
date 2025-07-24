@@ -20,7 +20,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   isTeacher: boolean
-  isAssistant: boolean
+  isAssistant?: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -71,15 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("Login successful, user role:", role)
         console.log("User data:", userData)
 
-        // Redirect based on role
+        // Force redirect với window.location thay vì router.push
         if (role === "ADMIN") {
-          router.push("/admin/dashboard")
-        } else if (role === "TEACHER") {
-          router.push("/dashboard")
+          console.log("Redirecting to admin dashboard...")
+          window.location.href = "/admin/dashboard"
         } else if (role === "ASSISTANT") {
-          router.push("/assistant/dashboard")
-        } else {
-          router.push("/dashboard")
+          console.log("Redirecting to teacher dashboard...")
+          window.location.href = "/assistant/dashboard"
+        }
+        else {
+          console.log("Redirecting to teacher dashboard...")
+          window.location.href = "/dashboard"
         }
 
         return { success: true, message: "Đăng nhập thành công" }

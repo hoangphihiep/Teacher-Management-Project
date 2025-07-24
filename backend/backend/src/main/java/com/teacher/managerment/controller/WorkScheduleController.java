@@ -42,7 +42,7 @@ public class WorkScheduleController {
     }
 
     @GetMapping("/my-schedule")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<WorkScheduleDto>>> getMyWeeklySchedule(
             @RequestParam String weekStart) {
         List<WorkScheduleDto> schedules = workScheduleService.getMyWeeklySchedule(weekStart);

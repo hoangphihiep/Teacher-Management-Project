@@ -54,7 +54,7 @@ const createMessageSchema = z.object({
   }),
 })
 
-export default function AssistantMessagesPage() {
+export default function MessagesPage() {
   const [sentMessages, setSentMessages] = useState<Message[]>([])
   const [receivedMessages, setReceivedMessages] = useState<Message[]>([])
   const [unreadMessages, setUnreadMessages] = useState<Message[]>([])
@@ -228,7 +228,7 @@ export default function AssistantMessagesPage() {
     <Card
       className={cn(
         "cursor-pointer hover:bg-slate-50 transition-colors",
-        message.isRead === false && "border-l-4 border-l-emerald-500 bg-emerald-50/30",
+        message.isRead === false && "border-l-4 border-l-royal-500 bg-blue-50/30",
       )}
       onClick={() => handleMessageClick(message)}
     >
@@ -237,7 +237,7 @@ export default function AssistantMessagesPage() {
           <div className="flex items-center gap-2">
             {getMessageTypeIcon(message.messageType)}
             <CardTitle className="text-base">{message.subject}</CardTitle>
-            {message.isRead === false && <div className="w-2 h-2 bg-emerald-500 rounded-full" />}
+            {message.isRead === false && <div className="w-2 h-2 bg-royal-500 rounded-full" />}
           </div>
           <div className="flex items-center gap-2">
             {getPriorityBadge(message.priority)}
@@ -300,12 +300,12 @@ export default function AssistantMessagesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tin nhắn trợ giảng</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Tin nhắn</h1>
           <p className="text-slate-600 mt-1">Gửi và nhận tin nhắn, thông báo</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-500 hover:bg-emerald-600 gap-2">
+            <Button className="bg-royal-500 hover:bg-royal-600 gap-2">
               <Plus className="h-4 w-4" />
               Soạn tin nhắn
             </Button>
@@ -409,13 +409,7 @@ export default function AssistantMessagesPage() {
                                     />
                                   </FormControl>
                                   <FormLabel className="text-sm font-normal">
-                                    {user.fullName} (
-                                    {user.role === "ADMIN"
-                                      ? "Quản trị viên"
-                                      : user.role === "TEACHER"
-                                        ? "Giáo viên"
-                                        : "Trợ giảng"}
-                                    )
+                                    {user.fullName} ({user.role === "ADMIN" ? "Quản trị viên" : "Giáo viên"})
                                   </FormLabel>
                                 </FormItem>
                               )
@@ -464,7 +458,7 @@ export default function AssistantMessagesPage() {
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Hủy
                   </Button>
-                  <Button type="submit" disabled={submitting} className="bg-emerald-500 hover:bg-emerald-600 gap-2">
+                  <Button type="submit" disabled={submitting} className="bg-royal-500 hover:bg-royal-600 gap-2">
                     <Send className="h-4 w-4" />
                     {submitting ? "Đang gửi..." : "Gửi tin nhắn"}
                   </Button>
@@ -523,7 +517,7 @@ export default function AssistantMessagesPage() {
                 <Send className="h-12 w-12 text-slate-400 mb-4" />
                 <h3 className="text-lg font-medium text-slate-900 mb-2">Chưa gửi tin nhắn nào</h3>
                 <p className="text-slate-600 mb-4">Bạn chưa gửi tin nhắn nào</p>
-                <Button onClick={() => setDialogOpen(true)} className="bg-emerald-500 hover:bg-emerald-600 gap-2">
+                <Button onClick={() => setDialogOpen(true)} className="bg-royal-500 hover:bg-royal-600 gap-2">
                   <Plus className="h-4 w-4" />
                   Soạn tin nhắn đầu tiên
                 </Button>

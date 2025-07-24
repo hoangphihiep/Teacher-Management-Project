@@ -40,7 +40,7 @@ public class MessageController {
     private JwtUtils jwtUtils;
 
     @PostMapping
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<MessageDto>> sendMessage(
             @Valid @RequestBody CreateMessageDto createDto,
             HttpServletRequest request) {
@@ -57,7 +57,7 @@ public class MessageController {
     }
 
     @GetMapping("/sent")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<MessageDto>>> getSentMessages(
             HttpServletRequest request,
             @RequestParam(defaultValue = "0") int page,
@@ -81,7 +81,7 @@ public class MessageController {
     }
 
     @GetMapping("/received")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<MessageDto>>> getReceivedMessages(
             HttpServletRequest request,
             @RequestParam(defaultValue = "0") int page,
@@ -114,7 +114,7 @@ public class MessageController {
     }
 
     @GetMapping("/unread")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<MessageDto>>> getUnreadMessages(HttpServletRequest request) {
         try {
             String userName = getUserNameFromRequest(request);
@@ -128,8 +128,40 @@ public class MessageController {
         }
     }
 
+    @GetMapping("/announcements")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
+    public ResponseEntity<ApiResponse<List<MessageDto>>> getAnnouncements(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "5") int limit) {
+        try {
+            String userName = getUserNameFromRequest(request);
+            TeacherProfileDto profile = profileService.getProfileByUsername(userName);
+            Long userId = profile.getUserId();
+            List<MessageDto> announcements = messageService.getAnnouncementsForUser(userId, limit);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Lấy danh sách thông báo thành công", announcements));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/announcements/unread-count")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
+    public ResponseEntity<ApiResponse<Long>> getUnreadAnnouncementsCount(HttpServletRequest request) {
+        try {
+            String userName = getUserNameFromRequest(request);
+            TeacherProfileDto profile = profileService.getProfileByUsername(userName);
+            Long userId = profile.getUserId();
+            Long count = messageService.countUnreadAnnouncements(userId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Lấy số lượng thông báo chưa đọc thành công", count));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
     @PostMapping("/{messageId}/read")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<MessageDto>> markMessageAsRead(
             @PathVariable Long messageId,
             HttpServletRequest request) {
@@ -146,7 +178,7 @@ public class MessageController {
     }
 
     @GetMapping("/{messageId}")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<MessageDto>> getMessageById(
             @PathVariable Long messageId,
             HttpServletRequest request) {
@@ -163,7 +195,7 @@ public class MessageController {
     }
 
     @GetMapping("/stats/unread-count")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<Long>> getUnreadMessagesCount(HttpServletRequest request) {
         try {
             String userName = getUserNameFromRequest(request);
@@ -178,7 +210,7 @@ public class MessageController {
     }
 
     @GetMapping("/broadcast")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<MessageDto>>> getBroadcastMessages(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -198,7 +230,7 @@ public class MessageController {
     }
 
     @GetMapping("/users")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or hasRole('ASSISTANT')")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAllUsers() {
         try {
             List<User> users = messageService.getAllUsers();

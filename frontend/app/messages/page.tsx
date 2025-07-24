@@ -409,7 +409,13 @@ export default function MessagesPage() {
                                     />
                                   </FormControl>
                                   <FormLabel className="text-sm font-normal">
-                                    {user.fullName} ({user.role === "ADMIN" ? "Quản trị viên" : "Giáo viên"})
+                                    {user.fullName} (
+                                      {user.role === "ADMIN"
+                                        ? "Quản trị viên"
+                                        : user.role === "TEACHER"
+                                        ? "Giáo viên"
+                                        : "Trợ giảng"}
+                                    )
                                   </FormLabel>
                                 </FormItem>
                               )

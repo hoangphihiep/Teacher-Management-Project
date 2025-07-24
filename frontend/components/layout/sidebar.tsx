@@ -59,11 +59,6 @@ const menuItems = [
     href: "/messages",
     icon: MessageSquare,
   },
-  {
-    title: "Báo cáo",
-    href: "/reports",
-    icon: FileText,
-  },
 ]
 
 export function Sidebar({ className }: SidebarProps) {
@@ -98,7 +93,7 @@ export function Sidebar({ className }: SidebarProps) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 truncate">{user?.fullName || "Giáo viên"}</p>
                 <p className="text-xs text-slate-600 truncate">
-                  {user?.role === "ADMIN" ? "Quản trị viên" : "Giáo viên"}
+                  {"Giáo viên"}
                 </p>
               </div>
             </div>
@@ -110,7 +105,7 @@ export function Sidebar({ className }: SidebarProps) {
         {/* Navigation Menu */}
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-slate-900">Quản lý</h2>
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="max-h-[400px]">
             <div className="space-y-1">
               {menuItems.map((item) => (
                 <Button
