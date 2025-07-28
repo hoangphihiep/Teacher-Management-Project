@@ -13,6 +13,6 @@ public class CertificationDto {
     private String issuer;
     private String issueYear;
     private String expiryYear;
-    private String credentialId;
+    private String imageUrl;
     private String description;
 }

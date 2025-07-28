@@ -54,6 +54,19 @@ public class WorkSchedule {
     @Column(name = "attendance_notes")
     private String attendanceNotes;
 
+    // Recurring fields
+    @Column(name = "is_recurring", nullable = false)
+    private Boolean isRecurring = false;
+
+    @Column(name = "recurring_end_date")
+    private LocalDate recurringEndDate;
+
+    @Column(name = "parent_schedule_id")
+    private Long parentScheduleId;
+
+    @Column(name = "week_number")
+    private Integer weekNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
@@ -110,5 +123,15 @@ public class WorkSchedule {
             return (endTime.toSecondOfDay() - startTime.toSecondOfDay()) / 3600.0;
         }
         return 0.0;
+    }
+
+    // Helper method to check if this is a parent recurring schedule
+    public boolean isParentRecurring() {
+        return isRecurring && parentScheduleId == null;
+    }
+
+    // Helper method to check if this is a child recurring schedule
+    public boolean isChildRecurring() {
+        return parentScheduleId != null;
     }
 }

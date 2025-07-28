@@ -48,18 +48,11 @@ const navigation = [
     name: "Đơn nghỉ phép",
     href: "/admin/leave-requests",
     icon: FileText,
-    badge: 8, // Mock pending requests count
   },
   {
     name: "Tin nhắn",
     href: "/admin/messages",
     icon: MessageSquare,
-    badge: 3, // Mock unread messages count
-  },
-  {
-    name: "Thông báo",
-    href: "/admin/notifications",
-    icon: Bell,
   },
   {
     name: "Cài đặt",
@@ -138,11 +131,7 @@ export function AdminSidebar() {
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left">{item.name}</span>
-                      {item.badge && item.badge > 0 && (
-                        <Badge variant="destructive" className="h-5 px-1.5 text-xs">
-                          {item.badge}
-                        </Badge>
-                      )}
+
                     </>
                   )}
                 </Button>

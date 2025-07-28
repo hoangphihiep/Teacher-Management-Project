@@ -14,8 +14,11 @@ import {
 import { Bell, Search, Menu, Plus, LogOut, User, Settings, Shield, GraduationCap, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/auth-context"
+import { useNotifications } from "@/hooks/use-notifications"
 import Link from "next/link"
 import Image from "next/image"
+import { formatDistanceToNow } from "date-fns"
+import { vi } from "date-fns/locale"
 
 interface HeaderProps {
   onMenuClick?: () => void
@@ -23,17 +26,25 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
+  const { announcements, unreadCount, markAsRead } = useNotifications()
 
   console.log("Header component rendered, user:", user)
 
-  const getInitials = (fullName: string) => {
-    return fullName
-      .split(" ")
-      .map((name) => name.charAt(0))
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+  const getInitials = (fullName: string | undefined | null) => {
+  // Kiểm tra nếu fullName không tồn tại hoặc rỗng
+  if (!fullName || typeof fullName !== 'string' || fullName.trim() === '') {
+    return 'U'; // Trả về 'U' cho Unknown
   }
+  
+  return fullName
+    .trim() // Loại bỏ khoảng trắng đầu cuối
+    .split(" ")
+    .filter(name => name.length > 0) // Loại bỏ các phần tử rỗng
+    .map((name) => name.charAt(0))
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
   // Get role-specific configurations
   const getRoleConfig = () => {
@@ -98,6 +109,33 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   const roleConfig = getRoleConfig()
+  const RoleIcon = roleConfig.icon
+
+  const handleNotificationClick = async (messageId: number) => {
+    await markAsRead(messageId)
+  }
+
+  const formatTimeAgo = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), {
+        addSuffix: true,
+        locale: vi,
+      })
+    } catch {
+      return "Vừa xong"
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "HIGH":
+        return "text-orange-600"
+      case "URGENT":
+        return "text-red-600"
+      default:
+        return "text-slate-600"
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -179,71 +217,73 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  3
-                </Badge>
+                {unreadCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel>Thông báo mới</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {user?.role === "ADMIN" && (
-                <>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Yêu cầu nghỉ phép mới</p>
-                      <p className="text-xs text-slate-600">Giáo viên Nguyễn Văn A - Từ 15/12 đến 16/12</p>
+              {announcements.length > 0 ? (
+                announcements.map((announcement) => (
+                  <DropdownMenuItem
+                    key={announcement.id}
+                    className="cursor-pointer"
+                    onClick={() => handleNotificationClick(announcement.id)}
+                  >
+                    <div className="flex flex-col gap-1 w-full">
+                      <div className="flex items-start justify-between">
+                        <p className="text-sm font-medium line-clamp-1">{announcement.subject}</p>
+                        {!announcement.isRead && (
+                          <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-2">{announcement.content}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-slate-500">{announcement.senderName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs ${getPriorityColor(announcement.priority)}`}>
+                            {announcement.priorityDisplay}
+                          </span>
+                          <span className="text-xs text-slate-400">{formatTimeAgo(announcement.createdAt)}</span>
+                        </div>
+                      </div>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Tài khoản mới đăng ký</p>
-                      <p className="text-xs text-slate-600">Trợ giảng Trần Thị B cần phê duyệt</p>
-                    </div>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Bell className="h-8 w-8 text-slate-300" />
+                    <p className="text-sm text-slate-500">Không có thông báo mới</p>
+                  </div>
+                </DropdownMenuItem>
+              )}
+              {announcements.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={
+                        user?.role === "ADMIN"
+                          ? "/admin/messages"
+                          : user?.role === "ASSISTANT"
+                            ? "/assistant/messages"
+                            : "/messages"
+                      }
+                      className="cursor-pointer text-center justify-center"
+                    >
+                      Xem tất cả thông báo
+                    </Link>
                   </DropdownMenuItem>
                 </>
               )}
-              {user?.role === "TEACHER" && (
-                <>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Lịch học thay đổi</p>
-                      <p className="text-xs text-slate-600">Lớp 10A1 - Toán - Phòng 201</p>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Tin nhắn từ Ban Giám Hiệu</p>
-                      <p className="text-xs text-slate-600">Họp khoa sáng thứ 2</p>
-                    </div>
-                  </DropdownMenuItem>
-                </>
-              )}
-              {user?.role === "ASSISTANT" && (
-                <>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Nhiệm vụ mới</p>
-                      <p className="text-xs text-slate-600">Hỗ trợ lớp 11A2 - Môn Lý</p>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium">Lịch làm việc cập nhật</p>
-                      <p className="text-xs text-slate-600">Thay đổi ca làm việc tuần tới</p>
-                    </div>
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuItem>
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">Thông báo hệ thống</p>
-                  <p className="text-xs text-slate-600">Bảo trì hệ thống vào 2h sáng mai</p>
-                </div>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

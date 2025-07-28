@@ -1,5 +1,5 @@
-//const API_BASE_URL = "http://localhost:8080/api"
-const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
+const API_BASE_URL = "http://localhost:8080/api"
+//const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
 
 export interface LoginRequest {
   username: string
@@ -72,7 +72,7 @@ export interface Certification {
   issuer: string
   issueYear: string
   expiryYear?: string
-  credentialId?: string
+  imageUrl?: string
   description?: string
 }
 
@@ -312,6 +312,12 @@ export interface WorkSchedule {
   updatedAt: string
   createdBy: number
   duration: number
+  isRecurring?: boolean
+  recurringEndDate?: string
+  parentScheduleId?: number
+  weekNumber?: number
+  isParentRecurring?: boolean
+  isChildRecurring?: boolean
 }
 
 export interface CreateWorkSchedule {
@@ -323,6 +329,8 @@ export interface CreateWorkSchedule {
   location?: string
   content: string
   notes?: string
+  isRecurring?: boolean
+  recurringEndDate?: string
 }
 
 export interface AttendanceMark {
@@ -364,6 +372,10 @@ export interface Course {
   createdBy: number
   assignments?: CourseAssignment[]
   classes?: CourseClass[]
+  courseFiles?: CourseFile[]
+  teachingMaterialFiles?: CourseFile[]
+  referenceMaterialFiles?: CourseFile[]
+  totalFilesCount?: number
 }
 
 export interface CreateCourse {
@@ -423,6 +435,33 @@ export interface UpdateCourseClass {
   studentList?: string
 }
 
+// Course File interfaces
+export interface CourseFile {
+  id: number
+  courseId: number
+  fileName: string
+  originalFileName: string
+  filePath: string
+  fileType: string
+  fileSize: number
+  fileCategory: string
+  uploadedAt: string
+  uploadedByName: string
+  uploadedById: number
+}
+
+export interface FileCategory {
+  value: string
+  label: string
+}
+
+export interface TeacherStudentStats {
+  teacherId: number
+  totalStudents: number
+  totalCourses: number
+  totalClasses: number
+}
+
 // Helper function to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token")
@@ -437,6 +476,13 @@ class ApiService {
     const token = localStorage.getItem("token")
     return {
       "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    }
+  }
+
+  private getAuthHeadersForUpload() {
+    const token = localStorage.getItem("token")
+    return {
       ...(token && { Authorization: `Bearer ${token}` }),
     }
   }
@@ -1247,6 +1293,176 @@ class ApiService {
     }
 
     return response.json()
+  }
+
+  async getAnnouncements(limit = 5): Promise<ApiResponse<Message[]>> {
+    const response = await fetch(`${API_BASE_URL}/messages/announcements?limit=${limit}`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async getUnreadAnnouncementsCount(): Promise<ApiResponse<number>> {
+    const response = await fetch(`${API_BASE_URL}/messages/announcements/unread-count`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async getRecurringScheduleChildren(parentId: number): Promise<ApiResponse<WorkSchedule[]>> {
+    const response = await fetch(`${API_BASE_URL}/work-schedules/${parentId}/recurring-children`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<WorkSchedule[]>(response)
+  }
+
+  async updateRecurringScheduleChild(
+    scheduleId: number,
+    workSchedule: CreateWorkSchedule,
+  ): Promise<ApiResponse<WorkSchedule>> {
+    const response = await fetch(`${API_BASE_URL}/work-schedules/recurring/${scheduleId}`, {
+      method: "PUT",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(workSchedule),
+    })
+
+    return this.handleResponse<WorkSchedule>(response)
+  }
+
+  async deleteRecurringScheduleChild(scheduleId: number): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE_URL}/work-schedules/recurring/${scheduleId}`, {
+      method: "DELETE",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<void>(response)
+  }
+
+  async uploadCourseFile(file: File, courseId: number, fileCategory: string): Promise<ApiResponse<CourseFile>> {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("courseId", courseId.toString())
+    formData.append("fileCategory", fileCategory)
+
+    const response = await fetch(`${API_BASE_URL}/course-files/upload`, {
+      method: "POST",
+      headers: this.getAuthHeadersForUpload(),
+      body: formData,
+    })
+
+    return this.handleResponse<CourseFile>(response)
+  }
+
+  async getCourseFiles(courseId: number): Promise<ApiResponse<CourseFile[]>> {
+    const response = await fetch(`${API_BASE_URL}/course-files/course/${courseId}`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<CourseFile[]>(response)
+  }
+
+  async getCourseFilesByCategory(courseId: number, category: string): Promise<ApiResponse<CourseFile[]>> {
+    const response = await fetch(`${API_BASE_URL}/course-files/course/${courseId}/category/${category}`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<CourseFile[]>(response)
+  }
+
+  async downloadCourseFile(fileId: number): Promise<Response> {
+    const response = await fetch(`${API_BASE_URL}/course-files/download/${fileId}`, {
+      method: "GET",
+      headers: this.getAuthHeadersForUpload(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response
+  }
+
+  async viewCourseFile(fileId: number): Promise<Response> {
+    const response = await fetch(`${API_BASE_URL}/course-files/view/${fileId}`, {
+      method: "GET",
+      headers: this.getAuthHeadersForUpload(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response
+  }
+
+  async deleteCourseFile(fileId: number): Promise<ApiResponse<void>> {
+    const response = await fetch(`${API_BASE_URL}/course-files/${fileId}`, {
+      method: "DELETE",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<void>(response)
+  }
+
+  async getFileCategories(): Promise<ApiResponse<string[]>> {
+    const response = await fetch(`${API_BASE_URL}/course-files/categories`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<string[]>(response)
+  }
+
+  async getMyStudentStats(): Promise<ApiResponse<TeacherStudentStats>> {
+    const response = await fetch(`${API_BASE_URL}/teacher/courses/my-student-stats`, {
+      method: "GET",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<TeacherStudentStats>(response)
+  }
+
+  // Certification Image APIs
+  async uploadCertificationImage(file: File): Promise<ApiResponse<{ fileName: string; imageUrl: string }>> {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const response = await fetch(`${API_BASE_URL}/certification-images/upload`, {
+      method: "POST",
+      headers: this.getAuthHeadersForUpload(),
+      body: formData,
+    })
+
+    return this.handleResponse<{ fileName: string; imageUrl: string }>(response)
+  }
+
+  async deleteCertificationImage(fileName: string): Promise<ApiResponse<string>> {
+    const response = await fetch(`${API_BASE_URL}/certification-images/${fileName}`, {
+      method: "DELETE",
+      headers: this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<string>(response)
+  }
+
+  getCertificationImageUrl(fileName: string): string {
+    return `${API_BASE_URL}/certification-images/${fileName}`
   }
 
   async testConnection(): Promise<string> {

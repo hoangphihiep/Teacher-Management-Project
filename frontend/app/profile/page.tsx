@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +38,8 @@ import {
   Loader2,
   Clock,
   Trash2,
+  Upload,
+  ImageIcon,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import {
@@ -62,9 +66,11 @@ const DAYS_OF_WEEK = [
 export default function ProfilePage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [profile, setProfile] = useState<TeacherProfile | null>(null)
   const [editForm, setEditForm] = useState<UpdateProfileRequest>({
     fullName: "",
@@ -95,6 +101,9 @@ export default function ProfilePage() {
   const [currentExperience, setCurrentExperience] = useState<Experience | null>(null)
   const [currentCertification, setCurrentCertification] = useState<Certification | null>(null)
   const [currentTimeSlot, setCurrentTimeSlot] = useState<AvailableTimeSlot | null>(null)
+
+  // Image preview state
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   console.log("Profile page rendered, user:", user, "profile:", profile)
 
@@ -151,6 +160,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setIsSaving(true)
+      console.log("Saving profile with certifications:", editForm.certifications)
       const response = await apiService.updateProfile(editForm)
       if (response.success && response.data) {
         setProfile(response.data)
@@ -201,6 +211,74 @@ export default function ProfilePage() {
       .map((item) => item.trim())
       .filter((item) => item.length > 0)
     setEditForm((prev) => ({ ...prev, [field]: items }))
+  }
+
+  // Image upload handlers
+  const handleImageUpload = async (file: File) => {
+    try {
+      setIsUploadingImage(true)
+      const response = await apiService.uploadCertificationImage(file)
+      if (response.success && response.data) {
+        console.log("Image uploaded successfully:", response.data)
+        return response.data.imageUrl
+      }
+      throw new Error(response.message)
+    } catch (error) {
+      console.error("Failed to upload image:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể upload hình ảnh",
+        variant: "destructive",
+      })
+      return null
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Lỗi",
+        description: "Chỉ chấp nhận file hình ảnh",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Lỗi",
+        description: "Kích thước file không được vượt quá 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload image
+    const imageUrl = await handleImageUpload(file)
+    console.log("Received imageUrl from upload:", imageUrl)
+
+    if (imageUrl && currentCertification) {
+      console.log("Setting imageUrl to currentCertification:", imageUrl)
+      setCurrentCertification((prev) => {
+        const updated = prev ? { ...prev, imageUrl } : null
+        console.log("Updated currentCertification:", updated)
+        return updated
+      })
+    }
   }
 
   // Education handlers
@@ -295,19 +373,31 @@ export default function ProfilePage() {
       issuer: "",
       issueYear: "",
       expiryYear: "",
-      credentialId: "",
+      imageUrl: "",
       description: "",
     })
+    setImagePreview(null)
     setIsCertificationDialogOpen(true)
   }
 
   const handleEditCertification = (certification: Certification) => {
     setCurrentCertification(certification)
+    // Set image preview if certification has an image
+    if (certification.imageUrl) {
+      const imageUrl = certification.imageUrl.startsWith("http")
+        ? certification.imageUrl
+        : apiService.getCertificationImageUrl(certification.imageUrl.split("/").pop() || "")
+      setImagePreview(imageUrl)
+    } else {
+      setImagePreview(null)
+    }
     setIsCertificationDialogOpen(true)
   }
 
   const handleSaveCertification = () => {
     if (!currentCertification) return
+
+    console.log("Saving certification:", currentCertification)
 
     const updatedCertifications = [...(editForm.certifications || [])]
     const existingIndex = updatedCertifications.findIndex((c) => c.id === currentCertification.id)
@@ -318,15 +408,24 @@ export default function ProfilePage() {
       updatedCertifications.push(currentCertification)
     }
 
+    console.log("Updated certifications array:", updatedCertifications)
     setEditForm((prev) => ({ ...prev, certifications: updatedCertifications }))
     setIsCertificationDialogOpen(false)
     setCurrentCertification(null)
+    setImagePreview(null)
   }
 
   const handleDeleteCertification = (index: number) => {
     const updatedCertifications = [...(editForm.certifications || [])]
     updatedCertifications.splice(index, 1)
     setEditForm((prev) => ({ ...prev, certifications: updatedCertifications }))
+  }
+
+  const handleRemoveImage = () => {
+    if (currentCertification) {
+      setCurrentCertification((prev) => (prev ? { ...prev, imageUrl: "" } : null))
+      setImagePreview(null)
+    }
   }
 
   // Time slot handlers
@@ -701,9 +800,13 @@ export default function ProfilePage() {
                   (isEditing ? editForm.certifications : profile.certifications)!.length > 0 ? (
                     (isEditing ? editForm.certifications : profile.certifications)!.map((cert, index) => (
                       <div key={cert.id || index} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold text-slate-900">{cert.name}</h4>
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-slate-900">{cert.name}</h4>
+                            <p className="text-slate-600">{cert.issuer}</p>
+                            {cert.description && <p className="text-sm text-slate-500 mt-1">{cert.description}</p>}
+                          </div>
+                          <div className="flex items-center gap-2 ml-4">
                             <Badge variant="outline">{cert.issueYear}</Badge>
                             {isEditing && (
                               <div className="flex gap-1">
@@ -717,9 +820,23 @@ export default function ProfilePage() {
                             )}
                           </div>
                         </div>
-                        <p className="text-slate-600">{cert.issuer}</p>
-                        {cert.credentialId && <p className="text-sm text-slate-500">ID: {cert.credentialId}</p>}
-                        {cert.description && <p className="text-sm text-slate-500">{cert.description}</p>}
+                        {cert.imageUrl && (
+                          <div className="mt-3">
+                            <img
+                              src={
+                                cert.imageUrl.startsWith("http")
+                                  ? cert.imageUrl
+                                  : apiService.getCertificationImageUrl(cert.imageUrl.split("/").pop() || "")
+                              }
+                              alt={cert.name}
+                              className="max-w-full h-auto max-h-48 rounded-lg border"
+                              onError={(e) => {
+                                console.error("Image load error:", e)
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -950,6 +1067,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Hidden file input */}
+      <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
+
       {/* Education Dialog */}
       <Dialog open={isEducationDialogOpen} onOpenChange={setIsEducationDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -1117,7 +1237,7 @@ export default function ProfilePage() {
 
       {/* Certification Dialog */}
       <Dialog open={isCertificationDialogOpen} onOpenChange={setIsCertificationDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{currentCertification?.id ? "Chỉnh sửa chứng chỉ" : "Thêm chứng chỉ"}</DialogTitle>
             <DialogDescription>Nhập thông tin chứng chỉ hoặc giải thưởng của bạn</DialogDescription>
@@ -1166,15 +1286,61 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="credentialId">Mã chứng chỉ (tùy chọn)</Label>
-              <Input
-                id="credentialId"
-                value={currentCertification?.credentialId || ""}
-                onChange={(e) =>
-                  setCurrentCertification((prev) => (prev ? { ...prev, credentialId: e.target.value } : null))
-                }
-                placeholder="ABC123456"
-              />
+              <Label>Hình ảnh chứng chỉ</Label>
+              <div className="space-y-2">
+                {imagePreview || currentCertification?.imageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={
+                        imagePreview ||
+                        (currentCertification?.imageUrl?.startsWith("http")
+                          ? currentCertification.imageUrl
+                          : apiService.getCertificationImageUrl(currentCertification?.imageUrl?.split("/").pop() || ""))
+                      }
+                      alt="Preview"
+                      className="w-full h-32 object-cover rounded-lg border"
+                      onError={(e) => {
+                        console.error("Image load error:", e)
+                        e.currentTarget.style.display = "none"
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 mb-2">Chưa có hình ảnh</p>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="w-full"
+                >
+                  {isUploadingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang upload...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {imagePreview || currentCertification?.imageUrl ? "Thay đổi hình ảnh" : "Upload hình ảnh"}
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500">Chấp nhận file JPG, PNG, GIF. Tối đa 5MB.</p>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="certDescription">Mô tả (tùy chọn)</Label>

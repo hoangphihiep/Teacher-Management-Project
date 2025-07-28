@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/dashboard")
-//@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
+@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
 public class DashboardController {
 
     @Autowired

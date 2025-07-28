@@ -50,11 +50,6 @@ const menuItems = [
     icon: FileText,
   },
   {
-    title: "Thông báo",
-    href: "/notifications",
-    icon: Bell,
-  },
-  {
     title: "Tin nhắn",
     href: "/messages",
     icon: MessageSquare,

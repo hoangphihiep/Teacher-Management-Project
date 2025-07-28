@@ -2,6 +2,7 @@ package com.teacher.managerment.dto;
 
 import com.teacher.managerment.entity.Course;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,10 @@ public class CourseDto {
     private List<CourseClassDto> classes;
     private Integer assignmentCount;
     private Integer classCount;
+    private List<CourseFileDto> courseFiles;
+    private List<CourseFileDto> teachingMaterialFiles;
+    private List<CourseFileDto> referenceMaterialFiles;
+    private Integer totalFilesCount;
 
     // Constructors
     public CourseDto() {}
@@ -55,6 +60,28 @@ public class CourseDto {
                     .map(CourseClassDto::new)
                     .collect(Collectors.toList());
             this.classCount = this.classes.size();
+        }
+
+        if (course.getCourseFiles() != null) {
+            this.courseFiles = course.getCourseFiles().stream()
+                    .filter(file -> file.getActive())
+                    .map(CourseFileDto::new)
+                    .collect(Collectors.toList());
+
+            this.teachingMaterialFiles = this.courseFiles.stream()
+                    .filter(file -> "TEACHING_MATERIAL".equals(file.getFileCategory()))
+                    .collect(Collectors.toList());
+
+            this.referenceMaterialFiles = this.courseFiles.stream()
+                    .filter(file -> "REFERENCE_MATERIAL".equals(file.getFileCategory()))
+                    .collect(Collectors.toList());
+
+            this.totalFilesCount = this.courseFiles.size();
+        } else {
+            this.courseFiles = new ArrayList<>();
+            this.teachingMaterialFiles = new ArrayList<>();
+            this.referenceMaterialFiles = new ArrayList<>();
+            this.totalFilesCount = 0;
         }
     }
 
@@ -177,5 +204,36 @@ public class CourseDto {
 
     public void setClassCount(Integer classCount) {
         this.classCount = classCount;
+    }
+    public List<CourseFileDto> getCourseFiles() {
+        return courseFiles;
+    }
+
+    public void setCourseFiles(List<CourseFileDto> courseFiles) {
+        this.courseFiles = courseFiles;
+    }
+
+    public List<CourseFileDto> getTeachingMaterialFiles() {
+        return teachingMaterialFiles;
+    }
+
+    public void setTeachingMaterialFiles(List<CourseFileDto> teachingMaterialFiles) {
+        this.teachingMaterialFiles = teachingMaterialFiles;
+    }
+
+    public List<CourseFileDto> getReferenceMaterialFiles() {
+        return referenceMaterialFiles;
+    }
+
+    public void setReferenceMaterialFiles(List<CourseFileDto> referenceMaterialFiles) {
+        this.referenceMaterialFiles = referenceMaterialFiles;
+    }
+
+    public Integer getTotalFilesCount() {
+        return totalFilesCount;
+    }
+
+    public void setTotalFilesCount(Integer totalFilesCount) {
+        this.totalFilesCount = totalFilesCount;
     }
 }

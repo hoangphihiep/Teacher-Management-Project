@@ -31,4 +31,9 @@ public class CreateWorkScheduleDto {
     private String content;
 
     private String notes;
+
+    // Recurring fields
+    private Boolean isRecurring = false;
+
+    private String recurringEndDate;
 }

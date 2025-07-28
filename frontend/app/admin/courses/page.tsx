@@ -6,15 +6,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toast } from "@/hooks/use-toast"
-import { apiService, Course, CreateCourse, UpdateCourse, CourseAssignment, CreateCourseAssignment, CourseClass, CreateCourseClass, UpdateCourseClass, User } from "@/lib/api"
-import { Plus, Edit, Trash2, Users, BookOpen, Calendar, UserPlus, X } from 'lucide-react'
+import {
+  apiService,
+  type Course,
+  type CreateCourse,
+  type UpdateCourse,
+  type CourseAssignment,
+  type CreateCourseAssignment,
+  type CourseClass,
+  type CreateCourseClass,
+  type UpdateCourseClass,
+  type User,
+  type CourseFile,
+} from "@/lib/api"
+import { Plus, Edit, Trash2, Users, BookOpen, UserPlus, X, FileText, Loader2 } from "lucide-react"
+import { FileUpload } from "@/components/course/file-upload"
+import { FileList } from "@/components/course/file-list"
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([])
@@ -22,7 +53,9 @@ export default function AdminCoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [courseAssignments, setCourseAssignments] = useState<CourseAssignment[]>([])
   const [courseClasses, setCourseClasses] = useState<CourseClass[]>([])
+  const [courseFiles, setCourseFiles] = useState<CourseFile[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingFiles, setLoadingFiles] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
@@ -35,32 +68,32 @@ export default function AdminCoursesPage() {
     courseName: "",
     description: "",
     teachingMaterials: "",
-    referenceMaterials: ""
+    referenceMaterials: "",
   })
 
   const [editCourse, setEditCourse] = useState<UpdateCourse>({
     courseName: "",
     description: "",
     teachingMaterials: "",
-    referenceMaterials: ""
+    referenceMaterials: "",
   })
 
   const [newAssignment, setNewAssignment] = useState<CreateCourseAssignment>({
     courseId: 0,
-    teacherId: 0
+    teacherId: 0,
   })
 
   const [newClass, setNewClass] = useState<CreateCourseClass>({
     courseId: 0,
     className: "",
     schedule: "",
-    studentList: ""
+    studentList: "",
   })
 
   const [editClass, setEditClass] = useState<UpdateCourseClass>({
     className: "",
     schedule: "",
-    studentList: ""
+    studentList: "",
   })
 
   useEffect(() => {
@@ -90,17 +123,44 @@ export default function AdminCoursesPage() {
     try {
       const response = await apiService.getUsers()
       if (response.success) {
-        setUsers(response.data.filter(user => user.role === "TEACHER"))
+        setUsers(response.data.filter((user) => user.role === "TEACHER"))
       }
     } catch (error) {
       console.error("Error loading users:", error)
     }
   }
 
+  const loadCourseFiles = async (courseId: number) => {
+    try {
+      setLoadingFiles(true)
+      const response = await apiService.getCourseFiles(courseId)
+      if (response.success) {
+        setCourseFiles(response.data)
+      }
+    } catch (error) {
+      console.error("Error loading course files:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách file",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingFiles(false)
+    }
+  }
+
+  const handleFileUploaded = (file: CourseFile) => {
+    setCourseFiles((prev) => [file, ...prev])
+  }
+
+  const handleFileDeleted = (fileId: number) => {
+    setCourseFiles((prev) => prev.filter((file) => file.id !== fileId))
+  }
+
   const loadCourseDetails = async (course: Course) => {
     try {
       setSelectedCourse(course)
-      
+
       // Load assignments
       const assignmentsResponse = await apiService.getCourseAssignments(course.id)
       if (assignmentsResponse.success) {
@@ -112,6 +172,9 @@ export default function AdminCoursesPage() {
       if (classesResponse.success) {
         setCourseClasses(classesResponse.data)
       }
+
+      // Load files
+      await loadCourseFiles(course.id)
     } catch (error) {
       toast({
         title: "Lỗi",
@@ -135,7 +198,7 @@ export default function AdminCoursesPage() {
           courseName: "",
           description: "",
           teachingMaterials: "",
-          referenceMaterials: ""
+          referenceMaterials: "",
         })
         loadCourses()
       }
@@ -250,7 +313,7 @@ export default function AdminCoursesPage() {
           courseId: 0,
           className: "",
           schedule: "",
-          studentList: ""
+          studentList: "",
         })
         if (selectedCourse) {
           loadCourseDetails(selectedCourse)
@@ -316,7 +379,7 @@ export default function AdminCoursesPage() {
       courseName: course.courseName,
       description: course.description || "",
       teachingMaterials: course.teachingMaterials || "",
-      referenceMaterials: course.referenceMaterials || ""
+      referenceMaterials: course.referenceMaterials || "",
     })
     setIsEditDialogOpen(true)
   }
@@ -324,7 +387,7 @@ export default function AdminCoursesPage() {
   const openAssignDialog = (course: Course) => {
     setNewAssignment({
       courseId: course.id,
-      teacherId: 0
+      teacherId: 0,
     })
     setIsAssignDialogOpen(true)
   }
@@ -334,7 +397,7 @@ export default function AdminCoursesPage() {
       courseId: course.id,
       className: "",
       schedule: "",
-      studentList: ""
+      studentList: "",
     })
     setIsCreateClassDialogOpen(true)
   }
@@ -344,7 +407,7 @@ export default function AdminCoursesPage() {
     setEditClass({
       className: courseClass.className,
       schedule: courseClass.schedule || "",
-      studentList: courseClass.studentList || ""
+      studentList: courseClass.studentList || "",
     })
     setIsEditClassDialogOpen(true)
   }
@@ -367,9 +430,7 @@ export default function AdminCoursesPage() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Tạo môn học mới</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin để tạo môn học mới
-              </DialogDescription>
+              <DialogDescription>Nhập thông tin để tạo môn học mới</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -402,21 +463,21 @@ export default function AdminCoursesPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="teachingMaterials">Tài liệu giảng dạy</Label>
+                <Label htmlFor="teachingMaterials">Tài liệu giảng dạy (Mô tả)</Label>
                 <Textarea
                   id="teachingMaterials"
                   value={newCourse.teachingMaterials}
                   onChange={(e) => setNewCourse({ ...newCourse, teachingMaterials: e.target.value })}
-                  placeholder="Danh sách tài liệu giảng dạy..."
+                  placeholder="Mô tả về tài liệu giảng dạy (file thực tế có thể upload sau)"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="referenceMaterials">Tài liệu tham khảo</Label>
+                <Label htmlFor="referenceMaterials">Tài liệu tham khảo (Mô tả)</Label>
                 <Textarea
                   id="referenceMaterials"
                   value={newCourse.referenceMaterials}
                   onChange={(e) => setNewCourse({ ...newCourse, referenceMaterials: e.target.value })}
-                  placeholder="Danh sách tài liệu tham khảo..."
+                  placeholder="Mô tả về tài liệu tham khảo (file thực tế có thể upload sau)"
                 />
               </div>
             </div>
@@ -436,9 +497,7 @@ export default function AdminCoursesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Danh sách môn học</CardTitle>
-              <CardDescription>
-                Tổng cộng {courses.length} môn học
-              </CardDescription>
+              <CardDescription>Tổng cộng {courses.length} môn học</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -446,9 +505,7 @@ export default function AdminCoursesPage() {
                   <div
                     key={course.id}
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedCourse?.id === course.id
-                        ? "bg-primary/10 border-primary"
-                        : "hover:bg-muted"
+                      selectedCourse?.id === course.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
                     }`}
                     onClick={() => loadCourseDetails(course)}
                   >
@@ -470,11 +527,7 @@ export default function AdminCoursesPage() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -482,15 +535,13 @@ export default function AdminCoursesPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Bạn có chắc chắn muốn xóa môn học "{course.courseName}"? 
-                                Hành động này không thể hoàn tác.
+                                Bạn có chắc chắn muốn xóa môn học "{course.courseName}"? Hành động này không thể hoàn
+                                tác.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteCourse(course.id)}>
-                                Xóa
-                              </AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleDeleteCourse(course.id)}>Xóa</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -507,10 +558,23 @@ export default function AdminCoursesPage() {
         <div className="lg:col-span-2">
           {selectedCourse ? (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="info">Thông tin</TabsTrigger>
-                <TabsTrigger value="teachers">Giáo viên</TabsTrigger>
-                <TabsTrigger value="classes">Lớp học</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="info" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Thông tin
+                </TabsTrigger>
+                <TabsTrigger value="teachers" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Giáo viên
+                </TabsTrigger>
+                <TabsTrigger value="classes" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Lớp học
+                </TabsTrigger>
+                <TabsTrigger value="materials" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Tài liệu
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-4">
@@ -527,15 +591,15 @@ export default function AdminCoursesPage() {
                       </p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Tài liệu giảng dạy</Label>
+                      <Label className="text-sm font-medium">Tài liệu giảng dạy (Mô tả)</Label>
                       <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {selectedCourse.teachingMaterials || "Chưa có tài liệu giảng dạy"}
+                        {selectedCourse.teachingMaterials || "Chưa có mô tả tài liệu giảng dạy"}
                       </p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Tài liệu tham khảo</Label>
+                      <Label className="text-sm font-medium">Tài liệu tham khảo (Mô tả)</Label>
                       <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {selectedCourse.referenceMaterials || "Chưa có tài liệu tham khảo"}
+                        {selectedCourse.referenceMaterials || "Chưa có mô tả tài liệu tham khảo"}
                       </p>
                     </div>
                   </CardContent>
@@ -548,9 +612,7 @@ export default function AdminCoursesPage() {
                     <div className="flex justify-between items-center">
                       <div>
                         <CardTitle>Giáo viên được phân công</CardTitle>
-                        <CardDescription>
-                          {courseAssignments.length} giáo viên được phân công
-                        </CardDescription>
+                        <CardDescription>{courseAssignments.length} giáo viên được phân công</CardDescription>
                       </div>
                       <Button onClick={() => openAssignDialog(selectedCourse)}>
                         <UserPlus className="mr-2 h-4 w-4" />
@@ -574,9 +636,7 @@ export default function AdminCoursesPage() {
                             <TableRow key={assignment.id}>
                               <TableCell>{assignment.teacherName}</TableCell>
                               <TableCell>{assignment.teacherEmail}</TableCell>
-                              <TableCell>
-                                {new Date(assignment.assignedAt).toLocaleDateString('vi-VN')}
-                              </TableCell>
+                              <TableCell>{new Date(assignment.assignedAt).toLocaleDateString("vi-VN")}</TableCell>
                               <TableCell>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
@@ -588,8 +648,8 @@ export default function AdminCoursesPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Xác nhận hủy phân công</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Bạn có chắc chắn muốn hủy phân công giáo viên "{assignment.teacherName}" 
-                                        khỏi môn học này?
+                                        Bạn có chắc chắn muốn hủy phân công giáo viên "{assignment.teacherName}" khỏi
+                                        môn học này?
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -606,9 +666,7 @@ export default function AdminCoursesPage() {
                         </TableBody>
                       </Table>
                     ) : (
-                      <p className="text-center text-muted-foreground py-4">
-                        Chưa có giáo viên nào được phân công
-                      </p>
+                      <p className="text-center text-muted-foreground py-4">Chưa có giáo viên nào được phân công</p>
                     )}
                   </CardContent>
                 </Card>
@@ -620,9 +678,7 @@ export default function AdminCoursesPage() {
                     <div className="flex justify-between items-center">
                       <div>
                         <CardTitle>Lớp học</CardTitle>
-                        <CardDescription>
-                          {courseClasses.length} lớp học
-                        </CardDescription>
+                        <CardDescription>{courseClasses.length} lớp học</CardDescription>
                       </div>
                       <Button onClick={() => openCreateClassDialog(selectedCourse)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -640,15 +696,11 @@ export default function AdminCoursesPage() {
                                 <div>
                                   <CardTitle className="text-lg">{courseClass.className}</CardTitle>
                                   <CardDescription>
-                                    Tạo ngày: {new Date(courseClass.createdAt).toLocaleDateString('vi-VN')}
+                                    Tạo ngày: {new Date(courseClass.createdAt).toLocaleDateString("vi-VN")}
                                   </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openEditClassDialog(courseClass)}
-                                  >
+                                  <Button variant="ghost" size="sm" onClick={() => openEditClassDialog(courseClass)}>
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                   <AlertDialog>
@@ -695,9 +747,36 @@ export default function AdminCoursesPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-center text-muted-foreground py-4">
-                        Chưa có lớp học nào
-                      </p>
+                      <p className="text-center text-muted-foreground py-4">Chưa có lớp học nào</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="materials" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Upload tài liệu</CardTitle>
+                    <CardDescription>Upload file tài liệu cho môn học {selectedCourse.courseName}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUpload courseId={selectedCourse.id} onFileUploaded={handleFileUploaded} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Danh sách tài liệu</CardTitle>
+                    <CardDescription>Tài liệu đã upload cho môn học này</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingFiles ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Đang tải danh sách file...</span>
+                      </div>
+                    ) : (
+                      <FileList files={courseFiles} onFileDeleted={handleFileDeleted} showCategory={true} />
                     )}
                   </CardContent>
                 </Card>
@@ -708,9 +787,7 @@ export default function AdminCoursesPage() {
               <CardContent className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Chọn một môn học để xem thông tin chi tiết
-                  </p>
+                  <p className="text-muted-foreground">Chọn một môn học để xem thông tin chi tiết</p>
                 </div>
               </CardContent>
             </Card>
@@ -723,9 +800,7 @@ export default function AdminCoursesPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa môn học</DialogTitle>
-            <DialogDescription>
-              Cập nhật thông tin môn học
-            </DialogDescription>
+            <DialogDescription>Cập nhật thông tin môn học</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -745,19 +820,21 @@ export default function AdminCoursesPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="editTeachingMaterials">Tài liệu giảng dạy</Label>
+              <Label htmlFor="editTeachingMaterials">Tài liệu giảng dạy (Mô tả)</Label>
               <Textarea
                 id="editTeachingMaterials"
                 value={editCourse.teachingMaterials}
                 onChange={(e) => setEditCourse({ ...editCourse, teachingMaterials: e.target.value })}
+                placeholder="Mô tả về tài liệu giảng dạy (file thực tế có thể upload ở tab Tài liệu)"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="editReferenceMaterials">Tài liệu tham khảo</Label>
+              <Label htmlFor="editReferenceMaterials">Tài liệu tham khảo (Mô tả)</Label>
               <Textarea
                 id="editReferenceMaterials"
                 value={editCourse.referenceMaterials}
                 onChange={(e) => setEditCourse({ ...editCourse, referenceMaterials: e.target.value })}
+                placeholder="Mô tả về tài liệu tham khảo (file thực tế có thể upload ở tab Tài liệu)"
               />
             </div>
           </div>
@@ -775,16 +852,14 @@ export default function AdminCoursesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Phân công giáo viên</DialogTitle>
-            <DialogDescription>
-              Chọn giáo viên để phân công cho môn học này
-            </DialogDescription>
+            <DialogDescription>Chọn giáo viên để phân công cho môn học này</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="teacherSelect">Giáo viên</Label>
               <Select
                 value={newAssignment.teacherId.toString()}
-                onValueChange={(value) => setNewAssignment({ ...newAssignment, teacherId: parseInt(value) })}
+                onValueChange={(value) => setNewAssignment({ ...newAssignment, teacherId: Number.parseInt(value) })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn giáo viên" />
@@ -813,9 +888,7 @@ export default function AdminCoursesPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Tạo lớp học mới</DialogTitle>
-            <DialogDescription>
-              Tạo lớp học cho môn học này
-            </DialogDescription>
+            <DialogDescription>Tạo lớp học cho môn học này</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -861,9 +934,7 @@ export default function AdminCoursesPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa lớp học</DialogTitle>
-            <DialogDescription>
-              Cập nhật thông tin lớp học
-            </DialogDescription>
+            <DialogDescription>Cập nhật thông tin lớp học</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">

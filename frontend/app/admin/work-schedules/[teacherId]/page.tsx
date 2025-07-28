@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns"
 import { vi } from "date-fns/locale"
 import {
@@ -34,11 +35,12 @@ import {
   CheckCircle,
   XCircle,
   ArrowLeft,
+  Repeat,
+  Eye,
 } from "lucide-react"
-import { parseTime, findFractionalIndex, cn } from "@/lib/utils"
+import { parseTime, findFractionalIndex} from "@/lib/utils"
 import { apiService, type WorkSchedule, type CreateWorkSchedule, type WorkType, type AttendanceStatus } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { time } from "console"
 
 const weekDays = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
 const timeSlots = [
@@ -76,7 +78,9 @@ export default function TeacherWorkSchedulePage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAttendanceDialogOpen, setIsAttendanceDialogOpen] = useState(false)
+  const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false)
   const [selectedSchedule, setSelectedSchedule] = useState<WorkSchedule | null>(null)
+  const [recurringChildren, setRecurringChildren] = useState<WorkSchedule[]>([])
 
   // Form states
   const [formData, setFormData] = useState<CreateWorkSchedule>({
@@ -88,6 +92,8 @@ export default function TeacherWorkSchedulePage() {
     location: "",
     content: "",
     notes: "",
+    isRecurring: false,
+    recurringEndDate: "",
   })
 
   const [attendanceData, setAttendanceData] = useState({
@@ -149,6 +155,22 @@ export default function TeacherWorkSchedulePage() {
       }
     } catch (error) {
       console.error("Error fetching attendance statuses:", error)
+    }
+  }
+
+  const fetchRecurringChildren = async (parentId: number) => {
+    try {
+      const response = await apiService.getRecurringScheduleChildren(parentId)
+      if (response.success && response.data) {
+        setRecurringChildren(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching recurring children:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách lịch lặp lại",
+        variant: "destructive",
+      })
     }
   }
 
@@ -228,7 +250,12 @@ export default function TeacherWorkSchedulePage() {
   }
 
   const handleDeleteSchedule = async (scheduleId: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa lịch này?")) return
+    const schedule = schedules.find((s) => s.id === scheduleId)
+    const confirmMessage = schedule?.isParentRecurring
+      ? "Bạn có chắc chắn muốn xóa lịch lặp lại này? Tất cả lịch con cũng sẽ bị xóa."
+      : "Bạn có chắc chắn muốn xóa lịch này?"
+
+    if (!confirm(confirmMessage)) return
 
     try {
       const response = await apiService.deleteWorkSchedule(scheduleId)
@@ -284,6 +311,8 @@ export default function TeacherWorkSchedulePage() {
       location: "",
       content: "",
       notes: "",
+      isRecurring: false,
+      recurringEndDate: "",
     })
   }
 
@@ -298,6 +327,8 @@ export default function TeacherWorkSchedulePage() {
       location: schedule.location || "",
       content: schedule.content,
       notes: schedule.notes || "",
+      isRecurring: false, // Don't allow changing recurring status in edit
+      recurringEndDate: "",
     })
     setIsEditDialogOpen(true)
   }
@@ -309,6 +340,12 @@ export default function TeacherWorkSchedulePage() {
       attendanceNotes: schedule.attendanceNotes || "",
     })
     setIsAttendanceDialogOpen(true)
+  }
+
+  const openRecurringDialog = async (schedule: WorkSchedule) => {
+    setSelectedSchedule(schedule)
+    await fetchRecurringChildren(schedule.id)
+    setIsRecurringDialogOpen(true)
   }
 
   const getWeeklyStats = () => {
@@ -476,6 +513,36 @@ export default function TeacherWorkSchedulePage() {
                     placeholder="Nhập ghi chú (tùy chọn)"
                   />
                 </div>
+                {/* Recurring Options */}
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isRecurring"
+                      checked={formData.isRecurring}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isRecurring: checked as boolean })}
+                    />
+                    <Label htmlFor="isRecurring" className="flex items-center gap-2">
+                      <Repeat className="h-4 w-4" />
+                      Lặp lại hàng tuần
+                    </Label>
+                  </div>
+
+                  {formData.isRecurring && (
+                    <div>
+                      <Label htmlFor="recurringEndDate">Ngày kết thúc lặp lại</Label>
+                      <Input
+                        id="recurringEndDate"
+                        type="date"
+                        value={formData.recurringEndDate}
+                        onChange={(e) => setFormData({ ...formData, recurringEndDate: e.target.value })}
+                        min={formData.workDate}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Lịch sẽ được tạo tự động mỗi tuần cho đến ngày này
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -632,7 +699,13 @@ export default function TeacherWorkSchedulePage() {
                           >
                             <div className="h-full flex flex-col justify-between">
                               <div className="space-y-1">
-                                <div className="text-xs font-medium truncate">{schedule.content}</div>
+                                <div className="flex items-center justify-between">
+                                  <div className="text-xs font-medium truncate">{schedule.content}</div>
+                                  {schedule.isParentRecurring && <Repeat className="h-3 w-3 text-blue-600" />}
+                                  {schedule.isChildRecurring && (
+                                    <div className="text-xs text-blue-600">T{schedule.weekNumber}</div>
+                                  )}
+                                </div>
                                 {schedule.location && (
                                   <div className="flex items-center gap-1">
                                     <MapPin className="h-2 w-2" />
@@ -656,6 +729,16 @@ export default function TeacherWorkSchedulePage() {
 
                                 {/* Action buttons - show on hover */}
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                  {schedule.isParentRecurring && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 w-6 p-0 bg-white/90"
+                                      onClick={() => openRecurringDialog(schedule)}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -830,6 +913,93 @@ export default function TeacherWorkSchedulePage() {
               Hủy
             </Button>
             <Button onClick={handleMarkAttendance}>Chấm công</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Recurring Schedule Dialog */}
+      <Dialog open={isRecurringDialogOpen} onOpenChange={setIsRecurringDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Repeat className="h-5 w-5" />
+              Quản lý lịch lặp lại
+            </DialogTitle>
+            <DialogDescription>Xem và chỉnh sửa các lịch con được tạo từ lịch lặp lại</DialogDescription>
+          </DialogHeader>
+
+          {selectedSchedule && (
+            <div className="space-y-4">
+              {/* Parent Schedule Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Lịch gốc</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Nội dung:</span> {selectedSchedule.content}
+                    </div>
+                    <div>
+                      <span className="font-medium">Thời gian:</span> {selectedSchedule.startTime} -{" "}
+                      {selectedSchedule.endTime}
+                    </div>
+                    <div>
+                      <span className="font-medium">Địa điểm:</span> {selectedSchedule.location || "Không có"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Kết thúc lặp lại:</span>{" "}
+                      {selectedSchedule.recurringEndDate || "Không xác định"}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Child Schedules */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Danh sách lịch con ({recurringChildren.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {recurringChildren.map((child) => (
+                      <div key={child.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Tuần {child.weekNumber}</span>
+                            <Badge variant="outline">{format(new Date(child.workDate), "dd/MM/yyyy")}</Badge>
+                            {getAttendanceIcon(child.attendanceStatus)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {child.startTime} - {child.endTime} • {child.location || "Không có địa điểm"}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => openAttendanceDialog(child)}>
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => openEditDialog(child)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteSchedule(child.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {recurringChildren.length === 0 && (
+                      <div className="text-center text-muted-foreground py-4">Không có lịch con nào</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRecurringDialogOpen(false)}>
+              Đóng
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

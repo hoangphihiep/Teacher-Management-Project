@@ -62,4 +62,18 @@ public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Long
 
     @Query("SELECT COUNT(ws) FROM WorkSchedule ws WHERE ws.teacher.id = :teacherId AND ws.workDate BETWEEN :startDate AND :endDate AND ws.workType = 'ROYAL' AND ws.attendanceStatus = 'PRESENT'")
     Long countWeeklyClassesByTeacherId(@Param("teacherId") Long teacherId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    // Recurring schedule queries
+    @Query("SELECT ws FROM WorkSchedule ws WHERE ws.parentScheduleId = :parentId ORDER BY ws.workDate ASC")
+    List<WorkSchedule> findByParentScheduleId(@Param("parentId") Long parentId);
+    @Query("SELECT ws FROM WorkSchedule ws WHERE ws.isRecurring = true AND ws.parentScheduleId IS NULL ORDER BY ws.workDate ASC")
+    List<WorkSchedule> findParentRecurringSchedules();
+    @Query("SELECT ws FROM WorkSchedule ws WHERE ws.teacher.id = :teacherId AND ws.parentScheduleId = :parentId AND ws.workDate = :date")
+    WorkSchedule findByTeacherIdAndParentScheduleIdAndDate(
+            @Param("teacherId") Long teacherId,
+            @Param("parentId") Long parentId,
+            @Param("date") LocalDate date);
+
+    @Query("SELECT COUNT(ws) FROM WorkSchedule ws WHERE ws.parentScheduleId = :parentId")
+    long countByParentScheduleId(@Param("parentId") Long parentId);
 }

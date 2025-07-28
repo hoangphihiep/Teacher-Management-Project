@@ -45,6 +45,9 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CourseClass> classes;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CourseFile> courseFiles;
+
     // Constructors
     public Course() {}
 
@@ -153,6 +156,14 @@ public class Course {
 
     public void setClasses(List<CourseClass> classes) {
         this.classes = classes;
+    }
+
+    public List<CourseFile> getCourseFiles() {
+        return courseFiles;
+    }
+
+    public void setCourseFiles(List<CourseFile> courseFiles) {
+        this.courseFiles = courseFiles;
     }
 
     @PreUpdate

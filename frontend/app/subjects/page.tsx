@@ -27,6 +27,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/hooks/use-toast"
+import { FileUpload } from "@/components/course/file-upload"
+import { FileList } from "@/components/course/file-list"
 import {
   apiService,
   type Course,
@@ -34,33 +36,33 @@ import {
   type CourseClass,
   type CreateCourseClass,
   type UpdateCourseClass,
+  type CourseFile,
 } from "@/lib/api"
-import { BookOpen, Edit, Plus, Trash2, Users, Calendar } from "lucide-react"
+import { BookOpen, Edit, Plus, Trash2, Users, Calendar, FileText, Upload, Loader2 } from "lucide-react"
 
 export default function SubjectsPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [courseClasses, setCourseClasses] = useState<CourseClass[]>([])
+  const [courseFiles, setCourseFiles] = useState<CourseFile[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingFiles, setLoadingFiles] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateClassDialogOpen, setIsCreateClassDialogOpen] = useState(false)
   const [isEditClassDialogOpen, setIsEditClassDialogOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<CourseClass | null>(null)
-
   const [editCourse, setEditCourse] = useState<UpdateCourse>({
     courseName: "",
     description: "",
     teachingMaterials: "",
     referenceMaterials: "",
   })
-
   const [newClass, setNewClass] = useState<CreateCourseClass>({
     courseId: 0,
     className: "",
     schedule: "",
     studentList: "",
   })
-
   const [editClass, setEditClass] = useState<UpdateCourseClass>({
     className: "",
     schedule: "",
@@ -105,9 +107,32 @@ export default function SubjectsPage() {
     }
   }
 
+  const loadCourseFiles = async (courseId: number) => {
+    try {
+      setLoadingFiles(true)
+      const response = await apiService.getCourseFiles(courseId)
+      if (response.success) {
+        setCourseFiles(response.data)
+      }
+    } catch (error) {
+      console.error("Error loading course files:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách file",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingFiles(false)
+    }
+  }
+
+  const handleCourseSelect = async (course: Course) => {
+    setSelectedCourse(course)
+    await Promise.all([loadCourseClasses(course), loadCourseFiles(course.id)])
+  }
+
   const handleUpdateCourse = async () => {
     if (!selectedCourse) return
-
     try {
       const response = await apiService.updateMyCourse(selectedCourse.id, editCourse)
       if (response.success) {
@@ -158,7 +183,6 @@ export default function SubjectsPage() {
 
   const handleEditClass = async () => {
     if (!editingClass) return
-
     try {
       const response = await apiService.updateMyCourseClass(editingClass.id, editClass)
       if (response.success) {
@@ -202,6 +226,14 @@ export default function SubjectsPage() {
     }
   }
 
+  const handleFileUploaded = (file: CourseFile) => {
+    setCourseFiles((prev) => [file, ...prev])
+  }
+
+  const handleFileDeleted = (fileId: number) => {
+    setCourseFiles((prev) => prev.filter((file) => file.id !== fileId))
+  }
+
   const openEditDialog = (course: Course) => {
     setEditCourse({
       courseName: course.courseName,
@@ -242,7 +274,6 @@ export default function SubjectsPage() {
         <h1 className="text-3xl font-bold">Môn học được phân công</h1>
         <p className="text-muted-foreground">Quản lý các môn học và lớp học được phân công cho bạn</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Course List */}
         <div className="lg:col-span-1">
@@ -260,7 +291,7 @@ export default function SubjectsPage() {
                       className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                         selectedCourse?.id === course.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
                       }`}
-                      onClick={() => loadCourseClasses(course)}
+                      onClick={() => handleCourseSelect(course)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -290,16 +321,15 @@ export default function SubjectsPage() {
             </CardContent>
           </Card>
         </div>
-
         {/* Course Details */}
         <div className="lg:col-span-2">
           {selectedCourse ? (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="info">Thông tin môn học</TabsTrigger>
                 <TabsTrigger value="classes">Lớp học</TabsTrigger>
+                <TabsTrigger value="materials">Tài liệu</TabsTrigger>
               </TabsList>
-
               <TabsContent value="info" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -322,21 +352,20 @@ export default function SubjectsPage() {
                       </p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Tài liệu giảng dạy</Label>
+                      <Label className="text-sm font-medium">Ghi chú tài liệu giảng dạy</Label>
                       <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {selectedCourse.teachingMaterials || "Chưa có tài liệu giảng dạy"}
+                        {selectedCourse.teachingMaterials || "Chưa có ghi chú tài liệu giảng dạy"}
                       </p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Tài liệu tham khảo</Label>
+                      <Label className="text-sm font-medium">Ghi chú tài liệu tham khảo</Label>
                       <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {selectedCourse.referenceMaterials || "Chưa có tài liệu tham khảo"}
+                        {selectedCourse.referenceMaterials || "Chưa có ghi chú tài liệu tham khảo"}
                       </p>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
-
               <TabsContent value="classes" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -430,6 +459,39 @@ export default function SubjectsPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="materials" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="h-5 w-5 text-blue-500" />
+                      Upload tài liệu - {selectedCourse.courseName}
+                    </CardTitle>
+                    <CardDescription>Upload tài liệu giảng dạy và tài liệu tham khảo cho môn học</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUpload courseId={selectedCourse.id} onFileUploaded={handleFileUploaded} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-500" />
+                      Danh sách tài liệu
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingFiles ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Đang tải danh sách file...</span>
+                      </div>
+                    ) : (
+                      <FileList files={courseFiles} onFileDeleted={handleFileDeleted} showCategory={true} />
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           ) : (
             <Card>
@@ -443,7 +505,6 @@ export default function SubjectsPage() {
           )}
         </div>
       </div>
-
       {/* Edit Course Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
@@ -469,19 +530,21 @@ export default function SubjectsPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="editTeachingMaterials">Tài liệu giảng dạy</Label>
+              <Label htmlFor="editTeachingMaterials">Ghi chú tài liệu giảng dạy</Label>
               <Textarea
                 id="editTeachingMaterials"
                 value={editCourse.teachingMaterials}
                 onChange={(e) => setEditCourse({ ...editCourse, teachingMaterials: e.target.value })}
+                placeholder="Ghi chú về tài liệu giảng dạy (file tài liệu được quản lý ở tab Tài liệu)"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="editReferenceMaterials">Tài liệu tham khảo</Label>
+              <Label htmlFor="editReferenceMaterials">Ghi chú tài liệu tham khảo</Label>
               <Textarea
                 id="editReferenceMaterials"
                 value={editCourse.referenceMaterials}
                 onChange={(e) => setEditCourse({ ...editCourse, referenceMaterials: e.target.value })}
+                placeholder="Ghi chú về tài liệu tham khảo (file tài liệu được quản lý ở tab Tài liệu)"
               />
             </div>
           </div>
@@ -493,7 +556,6 @@ export default function SubjectsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Create Class Dialog */}
       <Dialog open={isCreateClassDialogOpen} onOpenChange={setIsCreateClassDialogOpen}>
         <DialogContent className="max-w-2xl">
@@ -539,7 +601,6 @@ export default function SubjectsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Edit Class Dialog */}
       <Dialog open={isEditClassDialogOpen} onOpenChange={setIsEditClassDialogOpen}>
         <DialogContent className="max-w-2xl">

@@ -32,8 +32,8 @@ public class Certification {
     @Column(name = "expiry_year")
     private String expiryYear;
 
-    @Column(name = "credential_id")
-    private String credentialId;
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

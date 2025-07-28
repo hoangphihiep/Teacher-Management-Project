@@ -35,6 +35,9 @@ public class TeacherProfileService {
     @Autowired
     private AvailableTimeSlotRepository availableTimeSlotRepository;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     public TeacherProfileDto getProfileByUsername(String username) {
         System.out.println ("Tên1: " + username);
         User user = userRepository.findByUsername(username)
@@ -115,6 +118,8 @@ public class TeacherProfileService {
         return convertToDto(profile);
     }
 
+
+
     private void updateEducations(TeacherProfile profile, List<EducationDto> educationDtos) {
         // Delete existing educations
         educationRepository.deleteByProfile(profile);
@@ -167,7 +172,7 @@ public class TeacherProfileService {
                 certification.setIssuer(dto.getIssuer());
                 certification.setIssueYear(dto.getIssueYear());
                 certification.setExpiryYear(dto.getExpiryYear());
-                certification.setCredentialId(dto.getCredentialId());
+                certification.setImageUrl(dto.getImageUrl());
                 certification.setDescription(dto.getDescription());
                 certificationRepository.save(certification);
             }
@@ -271,7 +276,7 @@ public class TeacherProfileService {
         dto.setIssuer(certification.getIssuer());
         dto.setIssueYear(certification.getIssueYear());
         dto.setExpiryYear(certification.getExpiryYear());
-        dto.setCredentialId(certification.getCredentialId());
+        dto.setImageUrl(certification.getImageUrl());
         dto.setDescription(certification.getDescription());
         return dto;
     }

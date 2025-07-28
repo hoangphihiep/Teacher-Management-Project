@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/work-schedules")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
+@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
 public class WorkScheduleController {
 
     private final WorkScheduleService workScheduleService;
@@ -87,6 +87,31 @@ public class WorkScheduleController {
     public ResponseEntity<ApiResponse<WorkScheduleDto>> getWorkScheduleById(@PathVariable Long scheduleId) {
         WorkScheduleDto schedule = workScheduleService.getWorkScheduleById(scheduleId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Work schedule retrieved successfully", schedule));
+    }
+
+    // Recurring schedule endpoints
+    @GetMapping("/{parentId}/recurring-children")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<WorkScheduleDto>>> getRecurringScheduleChildren(
+            @PathVariable Long parentId) {
+        List<WorkScheduleDto> children = workScheduleService.getRecurringScheduleChildren(parentId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Recurring schedule children retrieved successfully", children));
+    }
+
+    @PutMapping("/recurring/{scheduleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<WorkScheduleDto>> updateRecurringScheduleChild(
+            @PathVariable Long scheduleId,
+            @Valid @RequestBody CreateWorkScheduleDto updateDto) {
+        WorkScheduleDto updated = workScheduleService.updateRecurringScheduleChild(scheduleId, updateDto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Recurring schedule child updated successfully", updated));
+    }
+
+    @DeleteMapping("/recurring/{scheduleId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteRecurringScheduleChild(@PathVariable Long scheduleId) {
+        workScheduleService.deleteRecurringScheduleChild(scheduleId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Recurring schedule child deleted successfully", null));
     }
 
     @GetMapping("/work-types")

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,6 +85,19 @@ public class WorkScheduleService {
         User teacher = userRepository.findById(createDto.getTeacherId())
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
+        // Create the main schedule
+        WorkSchedule workSchedule = createWorkScheduleFromDto(createDto, teacher, currentUser);
+        WorkSchedule savedSchedule = workScheduleRepository.save(workSchedule);
+
+        // If recurring, create additional schedules
+        if (createDto.getIsRecurring() && createDto.getRecurringEndDate() != null) {
+            createRecurringSchedules(savedSchedule, createDto);
+        }
+
+        return WorkScheduleDto.fromEntity(savedSchedule);
+    }
+
+    private WorkSchedule createWorkScheduleFromDto(CreateWorkScheduleDto createDto, User teacher, User currentUser) {
         WorkSchedule workSchedule = new WorkSchedule();
         workSchedule.setTeacher(teacher);
         workSchedule.setWorkDate(LocalDate.parse(createDto.getWorkDate()));
@@ -94,9 +108,45 @@ public class WorkScheduleService {
         workSchedule.setContent(createDto.getContent());
         workSchedule.setNotes(createDto.getNotes());
         workSchedule.setCreatedBy(currentUser);
+        workSchedule.setIsRecurring(createDto.getIsRecurring());
 
-        WorkSchedule saved = workScheduleRepository.save(workSchedule);
-        return WorkScheduleDto.fromEntity(saved);
+        if (createDto.getRecurringEndDate() != null) {
+            workSchedule.setRecurringEndDate(LocalDate.parse(createDto.getRecurringEndDate()));
+        }
+
+        return workSchedule;
+    }
+
+    private void createRecurringSchedules(WorkSchedule parentSchedule, CreateWorkScheduleDto createDto) {
+        LocalDate startDate = parentSchedule.getWorkDate().plusWeeks(1); // Start from next week
+        LocalDate endDate = LocalDate.parse(createDto.getRecurringEndDate());
+
+        List<WorkSchedule> recurringSchedules = new ArrayList<>();
+        int weekNumber = 1;
+
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            WorkSchedule recurringSchedule = new WorkSchedule();
+            recurringSchedule.setTeacher(parentSchedule.getTeacher());
+            recurringSchedule.setWorkDate(currentDate);
+            recurringSchedule.setStartTime(parentSchedule.getStartTime());
+            recurringSchedule.setEndTime(parentSchedule.getEndTime());
+            recurringSchedule.setWorkType(parentSchedule.getWorkType());
+            recurringSchedule.setLocation(parentSchedule.getLocation());
+            recurringSchedule.setContent(parentSchedule.getContent());
+            recurringSchedule.setNotes(parentSchedule.getNotes());
+            recurringSchedule.setCreatedBy(parentSchedule.getCreatedBy());
+            recurringSchedule.setIsRecurring(false); // Child schedules are not recurring
+            recurringSchedule.setParentScheduleId(parentSchedule.getId());
+            recurringSchedule.setWeekNumber(weekNumber);
+
+            recurringSchedules.add(recurringSchedule);
+
+            currentDate = currentDate.plusWeeks(1);
+            weekNumber++;
+        }
+
+        workScheduleRepository.saveAll(recurringSchedules);
     }
 
     public WorkScheduleDto updateWorkSchedule(Long scheduleId, CreateWorkScheduleDto updateDto) {
@@ -122,6 +172,13 @@ public class WorkScheduleService {
     public void deleteWorkSchedule(Long scheduleId) {
         WorkSchedule workSchedule = workScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Work schedule not found"));
+
+        // If this is a parent recurring schedule, delete all child schedules
+        if (workSchedule.isParentRecurring()) {
+            List<WorkSchedule> childSchedules = workScheduleRepository.findByParentScheduleId(scheduleId);
+            workScheduleRepository.deleteAll(childSchedules);
+        }
+
         workScheduleRepository.delete(workSchedule);
     }
 
@@ -140,5 +197,34 @@ public class WorkScheduleService {
         WorkSchedule workSchedule = workScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Work schedule not found"));
         return WorkScheduleDto.fromEntity(workSchedule);
+    }
+
+    public List<WorkScheduleDto> getRecurringScheduleChildren(Long parentId) {
+        List<WorkSchedule> childSchedules = workScheduleRepository.findByParentScheduleId(parentId);
+        return childSchedules.stream()
+                .map(WorkScheduleDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public WorkScheduleDto updateRecurringScheduleChild(Long scheduleId, CreateWorkScheduleDto updateDto) {
+        WorkSchedule workSchedule = workScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Work schedule not found"));
+
+        if (!workSchedule.isChildRecurring()) {
+            throw new RuntimeException("This is not a child recurring schedule");
+        }
+
+        return updateWorkSchedule(scheduleId, updateDto);
+    }
+
+    public void deleteRecurringScheduleChild(Long scheduleId) {
+        WorkSchedule workSchedule = workScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Work schedule not found"));
+
+        if (!workSchedule.isChildRecurring()) {
+            throw new RuntimeException("This is not a child recurring schedule");
+        }
+
+        workScheduleRepository.delete(workSchedule);
     }
 }

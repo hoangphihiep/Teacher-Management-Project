@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @NoArgsConstructor
@@ -26,32 +27,51 @@ public class WorkScheduleDto {
     private String attendanceStatus;
     private String attendanceStatusDisplay;
     private String attendanceNotes;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String createdAt;
+    private String updatedAt;
     private Long createdBy;
     private Double duration;
 
-    public static WorkScheduleDto fromEntity(WorkSchedule workSchedule) {
+    // Recurring fields
+    private Boolean isRecurring;
+    private String recurringEndDate;
+    private Long parentScheduleId;
+    private Integer weekNumber;
+    private Boolean isParentRecurring;
+    private Boolean isChildRecurring;
+
+    public static WorkScheduleDto fromEntity(WorkSchedule schedule) {
         WorkScheduleDto dto = new WorkScheduleDto();
-        dto.setId(workSchedule.getId());
-        dto.setTeacherId(workSchedule.getTeacher().getId());
-        dto.setTeacherName(workSchedule.getTeacher().getFullName());
-        dto.setWorkDate(workSchedule.getWorkDate().toString());
-        dto.setStartTime(workSchedule.getStartTime().toString());
-        dto.setEndTime(workSchedule.getEndTime().toString());
-        dto.setWorkType(workSchedule.getWorkType().name());
-        dto.setWorkTypeDisplay(workSchedule.getWorkType().getDisplayName());
-        dto.setWorkTypeColor(workSchedule.getWorkType().getColor());
-        dto.setLocation(workSchedule.getLocation());
-        dto.setContent(workSchedule.getContent());
-        dto.setNotes(workSchedule.getNotes());
-        dto.setAttendanceStatus(workSchedule.getAttendanceStatus().name());
-        dto.setAttendanceStatusDisplay(workSchedule.getAttendanceStatus().getDisplayName());
-        dto.setAttendanceNotes(workSchedule.getAttendanceNotes());
-        dto.setCreatedAt(workSchedule.getCreatedAt());
-        dto.setUpdatedAt(workSchedule.getUpdatedAt());
-        dto.setCreatedBy(workSchedule.getCreatedBy() != null ? workSchedule.getCreatedBy().getId() : null);
-        dto.setDuration(workSchedule.getDuration());
+        dto.setId(schedule.getId());
+        dto.setTeacherId(schedule.getTeacher().getId());
+        dto.setTeacherName(schedule.getTeacher().getFullName());
+        dto.setWorkDate(schedule.getWorkDate().toString());
+        dto.setStartTime(schedule.getStartTime().toString());
+        dto.setEndTime(schedule.getEndTime().toString());
+        dto.setWorkType(schedule.getWorkType().name());
+        dto.setWorkTypeDisplay(schedule.getWorkType().getDisplayName());
+        dto.setWorkTypeColor(schedule.getWorkType().getColor());
+        dto.setLocation(schedule.getLocation());
+        dto.setContent(schedule.getContent());
+        dto.setNotes(schedule.getNotes());
+        dto.setAttendanceStatus(schedule.getAttendanceStatus().name());
+        dto.setAttendanceStatusDisplay(schedule.getAttendanceStatus().getDisplayName());
+        dto.setAttendanceNotes(schedule.getAttendanceNotes());
+        dto.setCreatedBy(schedule.getCreatedBy() != null ? schedule.getCreatedBy().getId() : null);
+        dto.setDuration(schedule.getDuration());
+
+        // Recurring fields
+        dto.setIsRecurring(schedule.getIsRecurring());
+        dto.setRecurringEndDate(schedule.getRecurringEndDate() != null ? schedule.getRecurringEndDate().toString() : null);
+        dto.setParentScheduleId(schedule.getParentScheduleId());
+        dto.setWeekNumber(schedule.getWeekNumber());
+        dto.setIsParentRecurring(schedule.isParentRecurring());
+        dto.setIsChildRecurring(schedule.isChildRecurring());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        dto.setCreatedAt(schedule.getCreatedAt() != null ? schedule.getCreatedAt().format(formatter) : null);
+        dto.setUpdatedAt(schedule.getUpdatedAt() != null ? schedule.getUpdatedAt().format(formatter) : null);
+
         return dto;
     }
 }
