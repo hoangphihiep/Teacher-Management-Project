@@ -27,7 +27,7 @@ public class WorkScheduleService {
     private final UserRepository userRepository;
 
     public List<TeacherWorkSummaryDto> getAllTeachersWithWorkSummary() {
-        List<User> teachers = workScheduleRepository.findDistinctTeachers();
+        List<User> teachers = userRepository.findByRole(User.Role.TEACHER);
         //Dòng này có vấn đề
         LocalDate weekStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
         LocalDate weekEnd = weekStart.plusDays(6);
@@ -44,8 +44,8 @@ public class WorkScheduleService {
                     teacher.getFullName(),
                     teacher.getEmail(),
                     totalHours != null ? totalHours : 0.0,
-                    totalSchedules,
-                    unmarkedAttendance,
+                    totalSchedules != null ? totalSchedules : 0L, // Đảm bảo giá trị mặc định là 0L
+                    unmarkedAttendance != null ? unmarkedAttendance : 0L, // Đảm bảo giá trị mặc định là 0L
                     java.time.LocalDateTime.now()
             );
         }).collect(Collectors.toList());
@@ -90,7 +90,7 @@ public class WorkScheduleService {
         WorkSchedule savedSchedule = workScheduleRepository.save(workSchedule);
 
         // If recurring, create additional schedules
-        if (createDto.getIsRecurring() && createDto.getRecurringEndDate() != null) {
+        if (createDto.getIsRecurring() && createDto.getRecurringEndDate() != null && !createDto.getRecurringEndDate().isEmpty()) {
             createRecurringSchedules(savedSchedule, createDto);
         }
 
@@ -110,8 +110,10 @@ public class WorkScheduleService {
         workSchedule.setCreatedBy(currentUser);
         workSchedule.setIsRecurring(createDto.getIsRecurring());
 
-        if (createDto.getRecurringEndDate() != null) {
+        if (createDto.getRecurringEndDate() != null && !createDto.getRecurringEndDate().isEmpty()) {
             workSchedule.setRecurringEndDate(LocalDate.parse(createDto.getRecurringEndDate()));
+        } else {
+            workSchedule.setRecurringEndDate(null); // Đảm bảo là null nếu không có giá trị
         }
 
         return workSchedule;

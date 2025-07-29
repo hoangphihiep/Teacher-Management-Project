@@ -164,17 +164,6 @@ export function LoginForm() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-200">
-            <div className="text-center text-sm text-slate-600">
-              <div className="mb-2">Tài khoản demo:</div>
-              <div className="space-y-1 text-xs">
-                <div>
-                  <strong>Admin:</strong> admin / password123
-                </div>
-                <div>
-                  <strong>Giáo viên:</strong> teacher1 / password123
-                </div>
-              </div>
-            </div>
             <div className="text-center text-sm text-slate-600 mt-4">
               Cần hỗ trợ?{" "}
               <Button variant="link" className="px-0 text-royal-600 hover:text-royal-700">
