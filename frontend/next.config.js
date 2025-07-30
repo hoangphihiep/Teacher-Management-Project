@@ -1,6 +1,6 @@
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export", // Thêm dòng này để xuất tĩnh
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -13,7 +13,9 @@ const nextConfig = {
   },
   images: { unoptimized: true },
   devIndicators: false,
-  allowedDevOrigins: [],
-}
+  allowedDevOrigins: [
+    
+  ],
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
