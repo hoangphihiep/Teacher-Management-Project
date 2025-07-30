@@ -1,6 +1,6 @@
-const API_BASE_URL = "http://localhost:8080/api"
+//const API_BASE_URL = "http://localhost:8080/api"
 //const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
-
+const API_BASE_URL = "https://bsbu5echeg.execute-api.ap-southeast-2.amazonaws.com/prod/api"
 export interface LoginRequest {
   username: string
   password: string
