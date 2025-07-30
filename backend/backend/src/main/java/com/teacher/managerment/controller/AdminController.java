@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
 //@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://teacher-management-project-azure.vercel.app")
+@CrossOrigin(origins = "https://teacher-management-project-4r41.vercel.app")
 public class AdminController {
 
     @Autowired

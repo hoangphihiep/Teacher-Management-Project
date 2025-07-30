@@ -969,7 +969,7 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/admin/leave-requests/${requestId}/approve`, {
       method: "POST",
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ adminNote }),
+      body: JSON.stringify({ adminNotes: adminNote }),
     })
 
     if (!response.ok) {
@@ -983,7 +983,7 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/admin/leave-requests/${requestId}/reject`, {
       method: "POST",
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ adminNote }),
+      body: JSON.stringify({ adminNotes: adminNote }),
     })
 
     if (!response.ok) {
