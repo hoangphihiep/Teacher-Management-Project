@@ -47,13 +47,16 @@ public class JwtUtils {
     }
 
     public String generateTokenFromUsernameAndId(String username, Long userId) {
-        return Jwts.builder()
+        System.out.println("🔍 Generating token for username: " + username + ", userId: " + userId);
+        String token = Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+        System.out.println("🔍 Generated token: " + token);
+        return token;
     }
 
     public String getUserNameFromJwtToken(String token) {

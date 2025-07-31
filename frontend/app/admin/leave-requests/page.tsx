@@ -117,7 +117,17 @@ export default function LeaveRequestsManagement() {
   }
 
   const handleApproveRequest = async () => {
-    if (!selectedRequest) return
+    if (!selectedRequest) {
+      toast({
+        title: "Lỗi",
+        description: "Không tìm thấy đơn nghỉ phép được chọn",
+        variant: "destructive",
+      })
+      return
+    }
+
+    console.log("🔍 Selected request for approval:", selectedRequest)
+    console.log("🔍 Request ID:", selectedRequest.id, "Type:", typeof selectedRequest.id)
 
     try {
       const response = await apiService.approveLeaveRequestAdmin(selectedRequest.id, adminNote)
@@ -149,7 +159,17 @@ export default function LeaveRequestsManagement() {
   }
 
   const handleRejectRequest = async () => {
-    if (!selectedRequest) return
+    if (!selectedRequest) {
+      toast({
+        title: "Lỗi",
+        description: "Không tìm thấy đơn nghỉ phép được chọn",
+        variant: "destructive",
+      })
+      return
+    }
+
+    console.log("🔍 Selected request for rejection:", selectedRequest)
+    console.log("🔍 Request ID:", selectedRequest.id, "Type:", typeof selectedRequest.id)
 
     try {
       const response = await apiService.rejectLeaveRequestAdmin(selectedRequest.id, adminNote)
@@ -181,6 +201,9 @@ export default function LeaveRequestsManagement() {
   }
 
   const openActionDialog = (request: LeaveRequest, action: "approve" | "reject") => {
+    console.log("🔍 Opening action dialog for request:", request)
+    console.log("🔍 Request ID:", request.id, "Type:", typeof request.id)
+
     setSelectedRequest(request)
     setActionType(action)
     setAdminNote("")

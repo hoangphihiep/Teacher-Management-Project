@@ -1,6 +1,7 @@
-//const API_BASE_URL = "http://localhost:8080/api"
+const API_BASE_URL = "http://localhost:8080/api"
 //const API_BASE_URL = "https://teacher-management-backend-production-7e85.up.railway.app/api"
-const API_BASE_URL = "https://bsbu5echeg.execute-api.ap-southeast-2.amazonaws.com/prod/api"
+//const API_BASE_URL = "https://bsbu5echeg.execute-api.ap-southeast-2.amazonaws.com/prod/api"
+
 export interface LoginRequest {
   username: string
   password: string
@@ -220,7 +221,6 @@ export interface MessageRecipient {
   readAt?: string
   createdAt: string
 }
-
 
 export interface CreateMessage {
   subject: string
@@ -631,7 +631,7 @@ class ApiService {
 
   // Leave Request API methods
   async createLeaveRequest(leaveRequest: CreateLeaveRequest): Promise<ApiResponse<LeaveRequest>> {
-    console.log("Leave request gửi lên:", leaveRequest);
+    console.log("Leave request gửi lên:", leaveRequest)
     const response = await fetch(`${API_BASE_URL}/leave-requests`, {
       method: "POST",
       headers: this.getAuthHeaders(),
@@ -966,31 +966,99 @@ class ApiService {
   }
 
   async approveLeaveRequestAdmin(requestId: number, adminNote?: string): Promise<ApiResponse<LeaveRequest>> {
-    const response = await fetch(`${API_BASE_URL}/admin/leave-requests/${requestId}/approve`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ adminNotes: adminNote }),
-    })
+    console.log("🔍 Approving leave request:", { requestId, adminNote })
+    console.log("🔍 RequestId type:", typeof requestId, "Value:", requestId)
 
-    if (!response.ok) {
-      throw new Error(`HTTP error status: ${response.status}`)
+    // Validate requestId
+    if (!requestId || requestId === null || requestId === undefined) {
+      throw new Error("Request ID is required and cannot be null")
     }
 
-    return response.json()
+    const requestBody = { adminNotes: adminNote }
+    console.log("📤 Request body:", requestBody)
+
+    try {
+      const url = `${API_BASE_URL}/admin/leave-requests/${requestId}/approve`
+      console.log("📤 Request URL:", url)
+
+      const requestBody = adminNote ? { adminNotes: adminNote } : {}
+      console.log("📤 Request body:", requestBody)
+
+      const headers = this.getAuthHeaders()
+      console.log("📤 Request headers:", headers)
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(requestBody),
+      })
+
+      console.log("📥 Response status:", response.status)
+
+      const responseText = await response.text()
+      console.log("📥 Response text:", responseText)
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`
+        try {
+          const errorData = JSON.parse(responseText)
+          errorMessage = errorData.message || errorMessage
+        } catch (e) {
+          errorMessage = responseText || errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+
+      return JSON.parse(responseText)
+    } catch (error) {
+      console.error("❌ Error in approveLeaveRequestAdmin:", error)
+      throw error
+    }
   }
 
   async rejectLeaveRequestAdmin(requestId: number, adminNote?: string): Promise<ApiResponse<LeaveRequest>> {
-    const response = await fetch(`${API_BASE_URL}/admin/leave-requests/${requestId}/reject`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ adminNotes: adminNote }),
-    })
+    console.log("🔍 Rejecting leave request:", { requestId, adminNote })
+    console.log("🔍 RequestId type:", typeof requestId, "Value:", requestId)
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+    // Validate requestId
+    if (!requestId || requestId === null || requestId === undefined) {
+      throw new Error("Request ID is required and cannot be null")
     }
 
-    return response.json()
+    const requestBody = { adminNotes: adminNote }
+    console.log("📤 Request body:", requestBody)
+
+    try {
+      const url = `${API_BASE_URL}/admin/leave-requests/${requestId}/reject`
+      console.log("📤 Request URL:", url)
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(requestBody),
+      })
+
+      console.log("📥 Response status:", response.status)
+
+      const responseText = await response.text()
+      console.log("📥 Response text:", responseText)
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`
+        try {
+          const errorData = JSON.parse(responseText)
+          errorMessage = errorData.message || errorMessage
+        } catch (e) {
+          errorMessage = responseText || errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+
+      return JSON.parse(responseText)
+    } catch (error) {
+      console.error("❌ Error in rejectLeaveRequestAdmin:", error)
+      throw error
+    }
   }
 
   async getLeaveRequestStats(): Promise<ApiResponse<any>> {

@@ -72,11 +72,26 @@ public class AdminLeaveRequestController {
             @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest request) {
         try {
+            System.out.println("🔍 Approve request - RequestId: " + requestId);
+            System.out.println("🔍 Approve request - Body: " + body);
+
+            // Validate requestId first
+            if (requestId == null) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "Request ID không được để trống", null));
+            }
+
             Long adminId = getUserIdFromRequest(request);
+            System.out.println("🔍 Approve request - AdminId: " + adminId);
+
             String adminNotes = body != null ? body.get("adminNotes") : null;
+            System.out.println("🔍 Approve request - AdminNotes: " + adminNotes);
+
             LeaveRequestDto leaveRequest = leaveRequestService.approveLeaveRequest(requestId, adminId, adminNotes);
             return ResponseEntity.ok(new ApiResponse<>(true, "Đơn nghỉ phép đã được phê duyệt", leaveRequest));
         } catch (Exception e) {
+            System.out.println("❌ Error in approve request: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(false, e.getMessage(), null));
         }
@@ -88,11 +103,26 @@ public class AdminLeaveRequestController {
             @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest request) {
         try {
+            System.out.println("🔍 Reject request - RequestId: " + requestId);
+            System.out.println("🔍 Reject request - Body: " + body);
+
+            // Validate requestId first
+            if (requestId == null) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, "Request ID không được để trống", null));
+            }
+
             Long adminId = getUserIdFromRequest(request);
+            System.out.println("🔍 Reject request - AdminId: " + adminId);
+
             String adminNotes = body != null ? body.get("adminNotes") : null;
+            System.out.println("🔍 Reject request - AdminNotes: " + adminNotes);
+
             LeaveRequestDto leaveRequest = leaveRequestService.rejectLeaveRequest(requestId, adminId, adminNotes);
             return ResponseEntity.ok(new ApiResponse<>(true, "Đơn nghỉ phép đã bị từ chối", leaveRequest));
         } catch (Exception e) {
+            System.out.println("❌ Error in reject request: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(false, e.getMessage(), null));
         }
@@ -126,17 +156,23 @@ public class AdminLeaveRequestController {
 
     private Long getUserIdFromRequest(HttpServletRequest request) {
         String token = jwtUtils.getJwtFromCookies(request);
+        System.out.println("🔍 Token from cookies: " + (token != null ? "Found" : "Not found"));
+
         if (token == null) {
             String authHeader = request.getHeader("Authorization");
+            System.out.println("🔍 Authorization header: " + (authHeader != null ? "Found" : "Not found"));
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
+                System.out.println("🔍 Token from header: " + (token != null ? "Found" : "Not found"));
             }
         }
 
         if (token != null && jwtUtils.validateJwtToken(token)) {
-            return jwtUtils.getUserIdFromJwtToken(token);
+            Long userId = jwtUtils.getUserIdFromJwtToken(token);
+            System.out.println("🔍 User ID from token: " + userId);
+            return userId;
         }
 
-        throw new RuntimeException("Token không hợp lệ");
+        throw new RuntimeException("Token không hợp lệ hoặc không tìm thấy");
     }
 }
